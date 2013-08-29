@@ -198,6 +198,7 @@ def thermalblock_demo(args):
         URB = reconstructor.reconstruct(rb_discretization.solve(mumax))
         discretization.visualize(U - URB)
 
+    return errs, err_mus, ests, est_mus, conds, cond_mus
 
 if __name__ == '__main__':
     # parse arguments
