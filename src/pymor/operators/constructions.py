@@ -15,19 +15,23 @@ from pymor.operators.interfaces import OperatorInterface
 from pymor.operators.basic import OperatorBase, ProjectedOperator, ProjectedLinearOperator
 
 
-def rb_project_operator(operator, rb, product=None, name=None):
+def rb_project_operator(operator, source_rb, range_rb=None, product=None, name=None):
     assert operator is None or isinstance(operator, OperatorInterface)
 
     if operator is None:
         return None
-    if operator.dim_source > 0:
-        assert operator.dim_source == rb.dim
-        source_basis = rb
+    if operator.dim_source > 0 and source_rb is not None:
+        assert operator.dim_source == source_rb.dim
+        source_basis = source_rb
     else:
         source_basis = None
     if operator.dim_range > 1:
-        assert operator.dim_range == rb.dim
-        range_basis = rb
+        if range_rb is not None:
+            assert operator.dim_range == range_rb.dim
+            range_basis = range_rb
+        else:
+            assert operator.dim_range == source_rb.dim
+            range_basis = source_rb
     else:
         range_basis = None
 
