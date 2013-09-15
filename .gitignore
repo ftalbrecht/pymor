@@ -50,3 +50,4 @@ venvs
 htmlcov/
 coverage.xml
 libpeerconnection.log
+*.kdev4*
