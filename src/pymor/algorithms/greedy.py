@@ -65,7 +65,7 @@ def greedy(discretization, reductor, samples, initial_data=None, use_estimator=T
         'max_errs'
             Sequence of maximum errors during the greedy run.
         'max_errs_mu'
-            The parameters corresponding to `max_err`.
+            The parameters corresponding to `max_errs`.
     '''
 
     logger = getLogger('pymor.algorithms.greedy.greedy')
