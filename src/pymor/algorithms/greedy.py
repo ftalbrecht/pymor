@@ -96,7 +96,7 @@ def greedy(discretization, reductor, samples, initial_data=None, use_estimator=T
         logger.info('Maximum error after {} extensions: {} (mu = {})'.format(extensions, max_err, max_err_mu))
 
         if target_error is not None and max_err <= target_error:
-            logger.info('Reached maximal error on snapshots of {} <= {}'.format(max_err, target_error))
+            logger.info('Reached maximal error on snapshots of {} <= {}'.format(max_err[0], target_error))
             break
 
         logger.info('Extending with snapshot for mu = {}'.format(max_err_mu))
