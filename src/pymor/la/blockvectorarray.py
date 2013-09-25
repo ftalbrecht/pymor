@@ -52,6 +52,10 @@ class BlockVectorArray(VectorArrayInterface):
     def block_dims(self):
         return [block.dim for block in self._blocks]
 
+    @property
+    def num_blocks(self):
+        return len(self._blocks)
+
     def __len__(self):
         assert all([len(block) == len(self._blocks[0]) for block in self._blocks])
         return len(self._blocks[0])
@@ -79,7 +83,13 @@ class BlockVectorArray(VectorArrayInterface):
         raise Exception('Not yet implemented!')
 
     def axpy(self, alpha, x, ind=None, x_ind=None):
-        raise Exception('Not yet implemented!')
+        assert isinstance(x, BlockVectorArray)
+        assert x.num_blocks == self.num_blocks
+        assert x.block_dims == self.block_dims
+        assert x.type_blocks == self.type_blocks
+        if len(x) > 0:
+            for s_block, x_block in zip(self._blocks, x._blocks):
+                s_block.axpy(alpha, x_block, ind, x_ind)
 
     def dot(self, other, pairwise, ind=None, o_ind=None):
         raise Exception('Not yet implemented!')
@@ -91,7 +101,9 @@ class BlockVectorArray(VectorArrayInterface):
         raise Exception('Not yet implemented!')
 
     def l2_norm(self, ind=None):
-        raise Exception('Not yet implemented!')
+        assert len(self) == 1
+        assert ind == 1 or ind is None
+        return np.sqrt(sum([block.l2_norm() for block in self._blocks]))
 
     def sup_norm(self, ind=None):
         raise Exception('Not yet implemented!')
