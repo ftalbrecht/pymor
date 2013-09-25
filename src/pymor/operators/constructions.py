@@ -13,6 +13,7 @@ import numpy as np
 from pymor.la import VectorArrayInterface, NumpyVectorArray
 from pymor.operators.interfaces import OperatorInterface
 from pymor.operators.basic import OperatorBase, ProjectedOperator, ProjectedLinearOperator
+from pymor.operators.block import BlockOperator
 
 
 def rb_project_operator(operator, source_rb, range_rb=None, product=None, name=None):
@@ -20,20 +21,31 @@ def rb_project_operator(operator, source_rb, range_rb=None, product=None, name=N
 
     if operator is None:
         return None
-    if operator.dim_source > 0 and source_rb is not None:
-        assert operator.dim_source == source_rb.dim
+
+    if isinstance(source_rb, list):
+        assert isinstance(operator, BlockOperator)
         source_basis = source_rb
+    elif source_rb is not None:
+        if operator.dim_source > 0:
+            assert operator.dim_source == source_rb.dim
+            source_basis = source_rb
+        else:
+            source_basis = None
     else:
         source_basis = None
-    if operator.dim_range > 1:
-        if range_rb is not None:
-            assert operator.dim_range == range_rb.dim
-            range_basis = range_rb
-        else:
+
+    if isinstance(range_rb, list):
+        assert isinstance(operator, BlockOperator)
+        range_basis = range_rb
+    elif range_rb is not None:
+        assert operator.dim_range == range_rb.dim
+        range_basis = range_rb
+    else:
+        if not isinstance(operator, BlockOperator) and operator.dim_range > 1:
             assert operator.dim_range == source_rb.dim
             range_basis = source_rb
-    else:
-        range_basis = None
+        else:
+            range_basis = None
 
     return operator.projected(source_basis, range_basis, product=product, name=name)
 
