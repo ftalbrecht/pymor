@@ -9,6 +9,7 @@ import numpy as np
 from pymor.core.exceptions import ExtensionError
 from pymor.tools import float_cmp_all
 from pymor.la import VectorArrayInterface, NumpyVectorArray
+from pymor.la.blockvectorarray import BlockVectorArray
 from pymor.la.gram_schmidt import gram_schmidt
 from pymor.la.pod import pod
 from pymor.operators import NumpyMatrixOperator
@@ -184,3 +185,21 @@ def pod_basis_extension(basis, U, count=1, copy_basis=True, product=None):
         raise ExtensionError
 
     return new_basis
+
+
+def block_basis_extension(basis, U, extension_algorithm):
+    assert isinstance(U, BlockVectorArray)
+    num_blocks = U.num_blocks
+    if isinstance(basis, list):
+        assert len(basis) == num_blocks
+        assert all([isinstance(base, VectorArrayInterface) or base is None for base in basis])
+        local_bases = basis
+    elif basis is None:
+        local_bases = [None for jj in np.arange(num_blocks)]
+    else:
+        raise ExtensionError('Unknown basis given!')
+    if isinstance(extension_algorithm, list):
+        assert len(extension_algorithm) == num_blocks
+        return [extension_algorithm[jj](local_bases[jj], U.block(jj, copy=False)) for jj in np.arange(num_blocks)]
+    else:
+        return [extension_algorithm(local_bases[jj], U.block(jj, copy=False)) for jj in np.arange(num_blocks)]
