@@ -8,6 +8,7 @@ import numpy as np
 
 import pymor.core as core
 from pymor.la import NumpyVectorArray
+from pymor.la.blockvectorarray import BlockVectorArray
 from pymor.core.cache import Cachable, NO_CACHE_CONFIG
 from pymor.operators import rb_project_operator
 
@@ -18,12 +19,21 @@ class GenericRBReconstructor(core.BasicInterface):
         self.RB = RB
 
     def reconstruct(self, U):
-        assert isinstance(U, NumpyVectorArray)
-        return self.RB.lincomb(U.data)
+        if isinstance(U, NumpyVectorArray):
+            return self.RB.lincomb(U.data)
+        elif isinstance(U, BlockVectorArray):
+            assert all([block_type == NumpyVectorArray for block_type in U.type_blocks])
+            assert isinstance(self.RB, list)
+            assert len(self.RB) == U.num_blocks
+            return BlockVectorArray([self.RB[jj].lincomb(U.block(jj, copy=False).data) for jj in np.arange(U.num_blocks)])
 
     def restricted_to_subbasis(self, dim):
-        assert dim <= len(self.RB)
-        return GenericRBReconstructor(self.RB.copy(ind=range(dim)))
+        if isinstance(self.RB, list):
+            assert all([dim <= len(rb) for rb in self.RB])
+            return GenericRBReconstructor([rb.copy(ind=range(dim)) for rb in self.RB])
+        else:
+            assert dim <= len(self.RB)
+            return GenericRBReconstructor(self.RB.copy(ind=range(dim)))
 
 
 def reduce_generic_rb(discretization, RB, product=None, disable_caching=True):
