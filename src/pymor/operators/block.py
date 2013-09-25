@@ -34,6 +34,7 @@ class BlockOperator(OperatorInterface):
             else:
                 raise Exception('Not implemented yet!')
             self.dim_source = sum([block.dim_source for block in blocks])
+            self.build_parameter_type(inherits=self._blocks)
         else:
             assert source_dims is not None and range_dims is not None
             assert isinstance(source_dims, list) and isinstance(range_dims, list)
@@ -49,6 +50,7 @@ class BlockOperator(OperatorInterface):
             assert all([all([blocks[ii][jj].dim_source == self._source_dims[jj] if blocks[ii][jj] is not None else True for jj in np.arange(self.num_source_blocks)]) for ii in np.arange(self.num_range_blocks)])
             assert all([all([blocks[ii][jj].dim_range == self._range_dims[ii] if blocks[ii][jj] is not None else True for jj in np.arange(self.num_source_blocks)]) for ii in np.arange(self.num_range_blocks)])
             self._blocks = blocks
+            self.build_parameter_type(inherits=[block for block in block_row for block_row in blocks])
             self.linear = all([all([block.linear if block is not None else True for block in blocks_row]) for blocks_row in self._blocks])
             self.invert_options = None
             self.type_range = BlockVectorArray
@@ -59,14 +61,33 @@ class BlockOperator(OperatorInterface):
         raise Exception('Not implemented yet!')
 
     def apply2(self, V, U, U_ind=None, V_ind=None, mu=None, product=None, pairwise=True):
-        raise Exception('Not implemented yet!')
+        assert isinstance(V, BlockVectorArray)
+        assert isinstance(U, BlockVectorArray)
+        assert V.num_blocks == self.num_range_blocks
+        assert V.block_dims == self._range_dims
+        assert U.num_blocks == self.num_source_blocks
+        assert U.block_dims == self._source_dims
+        assert len(U) == 1
+        assert len(V) == 1
+        assert U_ind is None
+        assert V_ind is None
+        assert product is None
+        # we only work for diagonals blocks atm
+        assert self.num_range_blocks == self.num_source_blocks
+        assert all([self._blocks[ii][jj] is None if jj != ii else True
+                    for jj in np.arange(self.num_source_blocks)
+                   for ii in np.arange(self.num_range_blocks)])
+        return sum([self._blocks[ii][ii].apply2(V.block(ii, copy=False), U.block(ii, copy=False))
+                    for ii in np.arange(self.num_range_blocks)])
 
     def apply_inverse(self, U, ind=None, mu=None, options=None):
-        op = NumpyMatrixOperator(bmat([[coo_matrix(self._blocks[ii][jj].assemble(mu)._matrix) if self._blocks[ii][jj] is not None
-                                        else coo_matrix((self._range_dims[ii], self._source_dims[jj]))
-                                        for jj in np.arange(self.num_source_blocks)]
-                                       for ii in np.arange(self.num_range_blocks)]))
-        #import ipdb; ipdb.set_trace()
+        if self.dim_source == 0 and self.dim_range == 0:
+            return BlockVectorArray([NumpyVectorArray(np.zeros((0, 0), dtype=float)) for jj in np.arange(self.num_range_blocks)])
+        else:
+            op = NumpyMatrixOperator(bmat([[coo_matrix(self._blocks[ii][jj].assemble(mu)._matrix) if self._blocks[ii][jj] is not None
+                                            else coo_matrix((self._range_dims[ii], self._source_dims[jj]))
+                                            for jj in np.arange(self.num_source_blocks)]
+                                           for ii in np.arange(self.num_range_blocks)]).todense())
         res = op.apply_inverse(U, ind, options)
         assert len(res) == 1  # not implemented yet
         return BlockVectorArray(res, self._source_dims)
@@ -85,22 +106,22 @@ class BlockOperator(OperatorInterface):
         raise Exception('Not implemented yet!')
 
     def projected(self, source_basis, range_basis=None, product=None, name=None):
-        assert range_basis is None or self.dim_range > 1
         assert product is None  # not implemented yet!
         if isinstance(source_basis, VectorArrayInterface):
             raise Exception('Not implemented yet!')
         elif isinstance(source_basis, list):
             if self.dim_range == 1:
+                assert range_basis is None or (isinstance(range_basis, list) and all([len(basis) == 0 for basis in range_basis]))
                 assert len(source_basis) == self.num_source_blocks
                 assert all([source_basis[jj].dim == self._blocks[jj].dim_source for jj in np.arange(self.num_source_blocks)])
                 return BlockOperator([self._blocks[jj].projected(source_basis[jj], range_basis=None, product=None) for jj in np.arange(self.num_source_blocks)])
             else:
                 assert len(source_basis) == self.num_source_blocks
                 source_rb = source_basis
-                assert all([source_rb[jj].dim == self._source_dims[jj] for jj in np.arange(self.num_source_blocks)])
+                assert all([source_rb[jj].dim == self._source_dims[jj] if source_rb[jj] is not None else True for jj in np.arange(self.num_source_blocks)])
                 range_rb = range_basis if range_basis is not None else source_basis
                 assert len(range_rb) == self.num_range_blocks
-                assert all([range_rb[ii].dim == self._range_dims[ii] for ii in np.arange(self.num_range_blocks)])
+                assert all([range_rb[ii].dim == self._range_dims[ii] if range_rb[ii] is not None else True for ii in np.arange(self.num_range_blocks)])
                 return BlockOperator([[self._blocks[ii][jj].projected(source_rb[jj], range_rb[ii]) if self._blocks[ii][jj] is not None
                                        else None
                                        for jj in np.arange(self.num_source_blocks)]
