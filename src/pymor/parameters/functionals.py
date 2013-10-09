@@ -6,6 +6,8 @@ from __future__ import absolute_import, division, print_function
 
 from numbers import Number
 
+import numpy as np
+
 from .interfaces import ParameterFunctionalInterface
 
 
@@ -66,3 +68,27 @@ class GenericParameterFunctional(ParameterFunctionalInterface):
     def evaluate(self, mu=None):
         mu = self.parse_parameter(mu)
         return self._mapping(mu)
+
+
+class ExpressionParameterFunctional(GenericParameterFunctional):
+
+    functions = {k: np.__dict__[k] for k in {'sin', 'cos', 'tan', 'arcsin', 'arccos', 'arctan',
+                                             'sinh', 'cosh', 'tanh', 'arcsinh', 'arccosh', 'arctanh',
+                                             'exp', 'exp2', 'log', 'log2', 'log10',
+                                             'min', 'minimum', 'max', 'maximum',
+                                            }}
+
+    def __init__(self, expression, parameter_type, name=None):
+        self.expression = expression
+        code = compile(expression, '<dune expression>', 'eval')
+        mapping = lambda mu: eval(code, self.functions, mu)
+        GenericParameterFunctional.__init__(self, mapping, parameter_type, name)
+
+    def __repr__(self):
+        return 'ExpressionParameterFunctional({}, {})'.format(self.expression, repr(self.parameter_type))
+
+    def __getstate__(self):
+        return (self.expression, self.parameter_type, self.name)
+
+    def __setstate__(self, state):
+        self.__init__(*state)

@@ -70,7 +70,7 @@ def gram_schmidt(A, product=None, tol=None, offset=0, find_duplicates=None,
         for i in xrange(len(A)):
             duplicates = A.almost_equal(A, ind=i, o_ind=np.arange(max(offset, i + 1), len(A)))
             if np.any(duplicates):
-                A.remove(np.where(duplicates))
+                A.remove(np.where(duplicates)[0])
                 logger.info("Removing duplicate vectors")
 
     # main loop
@@ -82,15 +82,20 @@ def gram_schmidt(A, product=None, tol=None, offset=0, find_duplicates=None,
         else:
             oldnorm = np.sqrt(product.apply2(A, A, V_ind=i, U_ind=i, pairwise=True))[0]
 
+        if float_cmp_all(oldnorm, 0):
+            logger.info("Removing null vector {}".format(i))
+            remove.append(i)
+            continue
+
         if i == 0:
             A.scal(1/oldnorm, ind=0)
 
         else:
             first_iteration = True
 
-            # If reiterate is True, reiterate as long as the norm of the vector decreases
-            # strongly during orthogonalization (due to Andreas Buhr).
-            while first_iteration or reiterate and norm / oldnorm < reiteration_threshold:
+            # If reiterate is True, reiterate as long as the norm of the vector changes
+            # strongly during orthonormalization (due to Andreas Buhr).
+            while first_iteration or reiterate and norm < reiteration_threshold:
                 # this loop assumes that oldnorm is the norm of the ith vector when entering
 
                 if first_iteration:

@@ -8,7 +8,6 @@ import numpy as np
 
 import pymor.core as core
 from pymor.la import NumpyVectorArray
-from pymor.core.cache import Cachable, NO_CACHE_CONFIG
 from pymor.operators import rb_project_operator
 
 
@@ -26,7 +25,8 @@ class GenericRBReconstructor(core.BasicInterface):
         return GenericRBReconstructor(self.RB.copy(ind=range(dim)))
 
 
-def reduce_generic_rb(discretization, RB, product=None, disable_caching=True):
+def reduce_generic_rb(discretization, RB, product=None, disable_caching=True,
+                      extends=None):
     '''Generic reduced basis reductor.
 
     Reduces a discretization by applying `operators.rb_project_operator` to
@@ -53,9 +53,10 @@ def reduce_generic_rb(discretization, RB, product=None, disable_caching=True):
         The reconstructor providing a `reconstruct(U)` method which reconstructs
         high-dimensional solutions from solutions U of the reduced discretization.
     '''
+    assert extends is None or len(extends) == 3
 
     if RB is None:
-        RB = NumpyVectorArray.empty(max(op.dim_source for op in discretization.operators.itervalues() if op))
+        RB = discretization.type_solution.empty(discretization.dim_solution)
 
     projected_operators = {k: rb_project_operator(op, RB, product=product)
                            for k, op in discretization.operators.iteritems()}
@@ -73,7 +74,7 @@ def reduce_generic_rb(discretization, RB, product=None, disable_caching=True):
     rd.disable_logging()
     rc = GenericRBReconstructor(RB)
 
-    return rd, rc
+    return rd, rc, {}
 
 
 class SubbasisReconstructor(core.BasicInterface):
@@ -131,4 +132,4 @@ def reduce_to_subbasis(discretization, dim, reconstructor=None):
         rc = SubbasisReconstructor(next(discretization.operators.itervalues()).dim_source, dim,
                                    old_recontructor=reconstructor)
 
-    return rd, rc
+    return rd, rc, {}

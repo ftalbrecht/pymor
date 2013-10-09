@@ -6,14 +6,13 @@ from __future__ import absolute_import, division, print_function
 
 import copy
 
-from pymor.core import BasicInterface
 from pymor.core.interfaces import abstractmethod
-from pymor.core.cache import Cachable, cached
+from pymor.core.cache import CacheableInterface, cached
 from pymor.tools import Named
 from pymor.parameters import Parametric
 
 
-class DiscretizationInterface(BasicInterface, Parametric, Cachable, Named):
+class DiscretizationInterface(CacheableInterface, Parametric, Named):
     '''Describes a discretization.
 
     Note that we do not make any distinction between detailed and reduced
@@ -23,6 +22,8 @@ class DiscretizationInterface(BasicInterface, Parametric, Cachable, Named):
     ----------
     dim_solution
         Dimension of the `VectorArrays` returned by solve.
+    type_solution
+        Type of the `VectorArrays` returned by solve.
     linear
         True if the discretization describes a linear Problem.
     operators
@@ -43,6 +44,7 @@ class DiscretizationInterface(BasicInterface, Parametric, Cachable, Named):
     '''
 
     dim_solution = None
+    type_solution = None
     linear = False
     operators = dict()
     with_arguments = set(('operators',))

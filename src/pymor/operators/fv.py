@@ -40,11 +40,11 @@ class NonlinearAdvectionLaxFriedrichs(OperatorBase):
             else:
                 self._dirichlet_values = self.dirichlet_data(grid.centers(1)[boundary_info.dirichlet_boundaries(1)])
                 self._dirichlet_values = self._dirichlet_values.ravel()
+                self._dirichlet_values_flux_shaped = self._dirichlet_values.reshape((-1,1))
                 self.build_parameter_type(inherits=(flux,))
         else:
             self.build_parameter_type(inherits=(flux,))
         self.dim_source = self.dim_range = grid.size(0)
-        self.lock()
 
     def restricted(self, components):
         source_dofs = np.setdiff1d(np.union1d(self.grid.neighbours(0, 0)[components].ravel(), components),
@@ -93,12 +93,12 @@ class NonlinearAdvectionLaxFriedrichs(OperatorBase):
             if bi.has_dirichlet:
                 dirichlet_boundaries = bi.dirichlet_boundaries(1)
                 if hasattr(self, '_dirichlet_values'):
-                    F_edge[dirichlet_boundaries, 1] = self.flux(self._dirichlet_values, mu=mu)
+                    F_edge[dirichlet_boundaries, 1] = self.flux(self._dirichlet_values_flux_shaped, mu=mu)
                     U_edge[dirichlet_boundaries, 1] = self._dirichlet_values
                 elif self.dirichlet_data is not None:
                     dirichlet_values = self.dirichlet_data(g.centers(1)[dirichlet_boundaries],
                                                            mu=mu)
-                    F_edge[dirichlet_boundaries, 1] = self.flux(dirichlet_values, mu=mu)
+                    F_edge[dirichlet_boundaries, 1] = self.flux(dirichlet_values.reshape((-1,1)), mu=mu)
                     U_edge[dirichlet_boundaries, 1] = dirichlet_values
                 else:
                     F_edge[dirichlet_boundaries, 1] = 0
@@ -146,11 +146,11 @@ class NonlinearAdvectionEngquistOsher(OperatorBase):
             else:
                 self._dirichlet_values = self.dirichlet_data(grid.centers(1)[boundary_info.dirichlet_boundaries(1)])
                 self._dirichlet_values = self._dirichlet_values.ravel()
+                self._dirichlet_values_flux_shaped = self._dirichlet_values.reshape((-1,1))
                 self.build_parameter_type(inherits=(flux, flux_derivative))
         else:
             self.build_parameter_type(inherits=(flux, flux_derivative))
         self.dim_source = self.dim_range = grid.size(0)
-        self.lock()
 
     def restricted(self, components):
         source_dofs = np.setdiff1d(np.union1d(self.grid.neighbours(0, 0)[components].ravel(), components),
@@ -200,10 +200,10 @@ class NonlinearAdvectionEngquistOsher(OperatorBase):
             if bi.has_dirichlet and self.dirichlet_data is not None:
                 dirichlet_boundaries = bi.dirichlet_boundaries(1)
                 if hasattr(self, '_dirichlet_values'):
-                    F_d_edge[dirichlet_boundaries, 1] = self.flux_derivative(self._dirichlet_values, mu=mu)
-                    F_edge[dirichlet_boundaries, 1] = self.flux(self._dirichlet_values, mu=mu)
+                    F_d_edge[dirichlet_boundaries, 1] = self.flux_derivative(self._dirichlet_values_flux_shaped, mu=mu)
+                    F_edge[dirichlet_boundaries, 1] = self.flux(self._dirichlet_values_flux_shaped, mu=mu)
                 else:
-                    dirichlet_values = self.dirichlet_data(g.centers(1)[dirichlet_boundaries], mu=mu)
+                    dirichlet_values = self.dirichlet_data(g.centers(1)[dirichlet_boundaries], mu=mu).reshape((-1,1))
                     F_d_edge[dirichlet_boundaries, 1] = self.flux_derivative(dirichlet_values, mu=mu)
                     F_edge[dirichlet_boundaries, 1] = self.flux(dirichlet_values, mu=mu)
 
@@ -247,7 +247,6 @@ class L2Product(NumpyMatrixBasedOperator):
         self.dim_range = self.dim_source
         self.grid = grid
         self.name = name
-        self.lock()
 
     def _assemble(self, mu=None):
         assert self.check_parameter(mu)
@@ -281,7 +280,6 @@ class L2ProductFunctional(NumpyMatrixBasedOperator):
         self.function = function
         self.name = name
         self.build_parameter_type(inherits=(function,))
-        self.lock()
 
     def _assemble(self, mu=None):
         mu = self.parse_parameter(mu)

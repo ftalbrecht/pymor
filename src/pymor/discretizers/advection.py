@@ -15,10 +15,11 @@ from pymor.operators.fv import (NonlinearAdvectionLaxFriedrichs, NonlinearAdvect
                                 L2ProductFunctional)
 from pymor.operators import NumpyMatrixOperator
 from pymor.grids import RectGrid
-from pymor.gui.qt import GlumpyPatchVisualizer
+from pymor.gui.qt import GlumpyPatchVisualizer, Matplotlib1DVisualizer
 from pymor.discretizations import InstationaryDiscretization
 from pymor.la import induced_norm
 from pymor.la import NumpyVectorArray
+from pymor.core import inject_sid
 
 
 def discretize_nonlinear_instationary_advection_fv(analytical_problem, diameter=None, nt=100, num_flux='lax_friedrichs',
@@ -49,9 +50,15 @@ def discretize_nonlinear_instationary_advection_fv(analytical_problem, diameter=
     I = p.initial_data.evaluate(grid.quadrature_points(0, order=2)).squeeze()
     I = np.sum(I * grid.reference_element.quadrature(order=2)[1], axis=1) * (1. / grid.reference_element.volume)
     I = NumpyVectorArray(I)
+    inject_sid(I, __name__ + '.discretize_nonlinear_instationary_advection_fv.initial_data', p.initial_data, grid)
 
     products = {'l2': L2Product(grid, boundary_info)}
-    visualizer = GlumpyPatchVisualizer(grid=grid, bounding_box=grid.domain, codim=0)
+    if grid.dim == 2:
+        visualizer = GlumpyPatchVisualizer(grid=grid, bounding_box=grid.domain, codim=0)
+    elif grid.dim == 1:
+        visualizer = Matplotlib1DVisualizer(grid, codim=0)
+    else:
+        visualizer = None
     parameter_space = p.parameter_space if hasattr(p, 'parameter_space') else None
     time_stepper = ExplicitEulerTimeStepper(nt=nt)
 
