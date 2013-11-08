@@ -51,3 +51,5 @@ htmlcov/
 coverage.xml
 libpeerconnection.log
 *.kdev4*
+*.tar.gz
+*.c
