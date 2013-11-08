@@ -36,6 +36,8 @@ class Defaults(BasicInterface):
     induced_norm_tol:                   tolerance for clipping negative norm squares to zero
 
     random_seed:                        seed for numpy's random generator; if None, use /dev/urandom as source for seed
+
+    compact_print:                      print (arrays) in a compact but possibly not accurate way
     '''
 
     float_cmp_tol                       = 2**4 * np.finfo(np.zeros(1).dtype).eps
@@ -62,6 +64,8 @@ class Defaults(BasicInterface):
     induced_norm_tol                    = 10e-10
 
     _random_seed                        = 123456
+
+    compact_print                       = False
 
     @property
     def random_seed(self):
@@ -99,6 +103,8 @@ class Defaults(BasicInterface):
             induced_norm_tol                    = {0.induced_norm_tol}
 
             random_seed                         = {0.random_seed}
+
+            compact_print                       = {0.compact_print}
             '''.format(self)
 
 
