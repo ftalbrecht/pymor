@@ -10,6 +10,7 @@ from numbers import Number
 import numpy as np
 
 from pymor.tools import float_cmp_all
+from pymor import defaults
 
 
 class ParameterType(dict):
@@ -245,6 +246,30 @@ class Parameter(dict):
         return 'Parameter_' + '_'.join('{}-{}-{}'.format(k, self[k].shape, self[k].tostring()) for k in self.__keys)
 
     def __str__(self):
+
+        def format_array(array):
+            def format_element(e):
+                if e > 1e15:
+                    return '%(n).2e' % {'n': e}
+                elif e == np.floor(e):
+                    return '%(n).0f' % {'n': e}
+                elif e - np.floor(e) > 0.01 or e < 1000:
+                    return '%(n).2f' % {'n': e}
+                else:
+                    return '%(n).2e' % {'n': e}
+
+            if len(array) == 0:
+                return ''
+            elif len(array) == 1:
+                return format_element(array[0])
+            s = '['
+            for ii in np.arange(len(array) - 1):
+                s += format_element(array[ii]) + ', '
+            s += format_element(array[-1]) + ']'
+            return s
+
+        if defaults.compact_print:
+            np.set_string_function(format_array, repr=False)
         if self.__keys is None:
             self.__keys = sorted(self.keys())
         s = '{'
@@ -257,6 +282,7 @@ class Parameter(dict):
             else:
                 s += ', {}: {}'.format(k, v)
         s += '}'
+        np.set_string_function(None, repr=False)
         return s
 
 
