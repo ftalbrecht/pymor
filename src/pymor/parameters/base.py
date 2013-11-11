@@ -261,15 +261,24 @@ class Parameter(dict):
             if len(array) == 0:
                 return ''
             elif len(array) == 1:
-                return format_element(array[0])
+                if defaults.compact_print:
+                    return '[' + format_element(array[0]) + ']'
+                else:
+                    return '[{}]'.format(array[0])
             s = '['
             for ii in np.arange(len(array) - 1):
-                s += format_element(array[ii]) + ', '
-            s += format_element(array[-1]) + ']'
+                if defaults.compact_print:
+                    s += format_element(array[ii]) + ', '
+                else:
+                    s += '{}, '.format(array[ii])
+            if defaults.compact_print:
+                s += format_element(array[-1]) + ']'
+            else:
+                s += '{}]'.format(array[-1])
             return s
 
-        if defaults.compact_print:
-            np.set_string_function(format_array, repr=False)
+
+        np.set_string_function(format_array, repr=False)
         if self.__keys is None:
             self.__keys = sorted(self.keys())
         s = '{'
