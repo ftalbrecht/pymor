@@ -6,14 +6,13 @@ from __future__ import absolute_import, division, print_function
 
 import copy
 
-from pymor.core import BasicInterface
 from pymor.core.interfaces import abstractmethod
-from pymor.core.cache import Cachable, cached
+from pymor.core.cache import CacheableInterface, cached
 from pymor.tools import Named
 from pymor.parameters import Parametric
 
 
-class DiscretizationInterface(BasicInterface, Parametric, Cachable, Named):
+class DiscretizationInterface(CacheableInterface, Parametric, Named):
     '''Describes a discretization.
 
     Note that we do not make any distinction between detailed and reduced
@@ -31,7 +30,11 @@ class DiscretizationInterface(BasicInterface, Parametric, Cachable, Named):
         Dictionary of all operators contained in this discretization. The idea is
         that this attribute will be common to all discretizations such that it can
         be used for introspection. Compare the implementation of `reduce_generic_rb`.
-        For this class, operators has the keys 'operator' and 'rhs'.
+    functionals
+        Same as operators but for functionals.
+    vector_operators
+        Same as operators but for operators representing vectors, linear operators
+        with `dim_source == 1`.
 
     Optional Methods
     ----------------
@@ -48,7 +51,9 @@ class DiscretizationInterface(BasicInterface, Parametric, Cachable, Named):
     type_solution = None
     linear = False
     operators = dict()
-    with_arguments = set(('operators',))
+    functionals = dict()
+    vector_operators = dict()
+    with_arguments = set(('operators', 'functionals', 'vector_operators'))
 
     @abstractmethod
     def _solve(self, mu=None):

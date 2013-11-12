@@ -27,17 +27,19 @@ class OnedGrid(AffineGridInterface):
     dim_outer = 1
     reference_element = line
 
-    def __init__(self, domain=(0, 1), num_intervals=4):
+    def __init__(self, domain=(0, 1), num_intervals=4, identify_left_right=False):
         super(OnedGrid, self).__init__()
         self.reference_element = line
         self._domain = np.array(domain)
         self._num_intervals = num_intervals
+        self._sizes = [num_intervals, num_intervals] if identify_left_right else [num_intervals, num_intervals + 1]
         self._width = np.abs(self._domain[1] - self._domain[0]) / self._num_intervals
         self.__subentities = np.vstack((np.arange(self._num_intervals, dtype=np.int32),
                                         np.arange(self._num_intervals, dtype=np.int32) + 1))
+        if identify_left_right:
+            self.__subentities[-1, -1] = 0
         self.__A = np.ones(self._num_intervals, dtype=np.int32)[:, np.newaxis, np.newaxis] * self._width
         self.__B = (self._domain[0] + self._width * (np.arange(self._num_intervals, dtype=np.int32)))[:, np.newaxis]
-        self.lock()
 
     def __str__(self):
         return ('OnedGrid, domain [{xmin},{xmax}]'
@@ -50,8 +52,7 @@ class OnedGrid(AffineGridInterface):
 
     def size(self, codim=0):
         assert 0 <= codim <= 1, 'codim has to be between 0 and {}!'.format(self.dim)
-        if 0 <= codim <= 1:
-            return self._num_intervals + codim
+        return self._sizes[codim]
 
     def subentities(self, codim=0, subentity_codim=None):
         assert 0 <= codim <= 1, CodimError('Invalid codimension')
@@ -77,5 +78,7 @@ class OnedGrid(AffineGridInterface):
         '''Used for unit testing.'''
         return [OnedGrid(domain=np.array((-2, 2)), num_intervals=10),
                 OnedGrid(domain=np.array((-2, -4)), num_intervals=100),
+                OnedGrid(domain=np.array((-2, -4)), num_intervals=100, identify_left_right=True),
                 OnedGrid(domain=np.array((3, 2)), num_intervals=10),
+                OnedGrid(domain=np.array((3, 2)), num_intervals=10, identify_left_right=True),
                 OnedGrid(domain=np.array((1, 2)), num_intervals=10000)]

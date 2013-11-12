@@ -121,10 +121,10 @@ class Parameter(dict):
     __keys = None
 
     def __init__(self, v):
-        # calling dict.__init__ breaks multiple inheritance but is faster than
-        # the super() call
-        dict.__init__(self, v)
-        assert all(isinstance(v, np.ndarray) for v in self.itervalues())
+        if v is None:
+            v = {}
+        i = v.iteritems() if hasattr(v, 'iteritems') else v
+        dict.__init__(self, {k: np.array(v) if not isinstance(v, np.ndarray) else v for k, v in i})
 
     @classmethod
     def from_parameter_type(cls, mu, parameter_type=None):
@@ -150,7 +150,7 @@ class Parameter(dict):
             Is raised if `mu` cannot be interpreted as a `Paramter` of `parameter_type`.
         '''
         if not parameter_type:
-            assert mu is None
+            assert mu is None or mu == {}
             return None
 
         if isinstance(mu, Parameter):
@@ -167,7 +167,8 @@ class Parameter(dict):
                 raise ValueError('Parameter length does not match.')
             mu = dict(izip(parameter_type, mu))
         elif set(mu.keys()) != set(parameter_type.keys()):
-            raise ValueError('Parameter components do not match')
+            raise ValueError('Provided parameter with keys {} does not match parameter type {}.'
+                             .format(mu.keys(), parameter_type))
         for k, v in mu.iteritems():
             if not isinstance(v, np.ndarray):
                 v = np.array(v)
@@ -213,9 +214,8 @@ class Parameter(dict):
         self.__keys = None
 
     def __eq__(self, mu):
-        if mu is None:
-            return False
-        assert mu.__class__ == Parameter
+        if not isinstance(mu, Parameter):
+            mu = Parameter(mu)
         if self.viewkeys() != mu.viewkeys():
             return False
         elif not all(np.array_equal(v, mu[k]) for k, v in self.iteritems()):
@@ -333,11 +333,15 @@ class Parametric(object):
 
     def parse_parameter(self, mu):
         if mu is None:
-            assert self.parameter_type is None
+            assert self.parameter_type is None, \
+                'Given parameter is None but expected parameter of type {}'.format(self.parameter_type)
             return None
         if mu.__class__ is not Parameter:
             mu = Parameter.from_parameter_type(mu, self.parameter_type)
-        assert self.parameter_type is None or all(getattr(mu.get(k, None), 'shape', None) == v for k, v in self.parameter_type.iteritems())
+        assert self.parameter_type is None or all(getattr(mu.get(k, None), 'shape', None) == v
+                                                  for k, v in self.parameter_type.iteritems()), \
+            ('Given parameter of type {} does not match expected parameter type {}'
+             .format(mu.parameter_type, self.parameter_type))
         return mu
 
     def check_parameter(self, mu):

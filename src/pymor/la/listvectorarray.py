@@ -13,6 +13,7 @@ import numpy as np
 from pymor.core.interfaces import BasicInterface, abstractmethod, abstractclassmethod, abstractproperty
 from pymor.core.exceptions import CommunicationError
 from pymor.la.interfaces import VectorArrayInterface
+from pymor.tools import float_cmp_all
 
 
 class VectorInterface(BasicInterface):
@@ -106,11 +107,71 @@ class VectorInterface(BasicInterface):
         return result
 
 
+class NumpyVector(VectorInterface):
+
+    def __init__(self, instance, dtype=None, copy=False, order=None, subok=False):
+        if isinstance(instance, np.ndarray) and not copy:
+            self._array = instance
+        else:
+            self._array = np.array(instance, dtype=dtype, copy=copy, order=order, subok=subok, ndmin=1)
+        assert self._array.ndim == 1
+
+    def zeros(cls, dim):
+        return NumpyVector(np.zeros(dim))
+
+    @property
+    def dim(self):
+        return len(self._array)
+
+    def copy(self):
+        return NumpyVector(self._array, copy=True)
+
+    def almost_equal(self, other, rtol=None, atol=None):
+        assert self.dim == other.dim
+        return float_cmp_all(self._array, other._array, rtol=rtol, atol=atol)
+
+    def scal(self, alpha):
+        self._array *= alpha
+
+    def axpy(self, alpha, x):
+        assert self.dim == x.dim
+        if alpha == 0:
+            return
+        if alpha == 1:
+            self._array += x._array
+        elif alpha == -1:
+            self._array -= x._array
+        else:
+            self._array += x._array * alpha
+
+    def dot(self, other):
+        assert self.dim == other.dim
+        return np.sum(self._array * other._array)
+
+    def l1_norm(self):
+        return np.sum(np.abs(self._array))
+
+    def l2_norm(self):
+        return np.sum(np.power(self._array, 2))**(1/2)
+
+    def components(self, component_indices):
+        assert isinstance(component_indices, list) \
+            or isinstance(component_indices, np.ndarray) and component_indices.ndim == 1
+        return self._array[component_indices]
+
+    def amax(self):
+        A = np.abs(self._array)
+        max_ind = np.argmax(A)
+        max_val = A[max_ind]
+        return (max_ind, max_val)
+
+
 class ListVectorArray(VectorArrayInterface):
 
     vector_type = None
 
     def __init__(self, vectors, dim=None, copy=True):
+        assert dim is None or dim >= 0
         if not copy:
             if isinstance(vectors, list):
                 self._list = vectors
@@ -126,10 +187,12 @@ class ListVectorArray(VectorArrayInterface):
 
     @classmethod
     def empty(cls, dim, reserve=0):
+        assert reserve >= 0
         return cls([], dim, copy=False)
 
     @classmethod
     def zeros(cls, dim, count=1):
+        assert count >= 0
         return cls([cls.vector_type.zeros(dim) for c in xrange(count)], dim=dim, copy=False)
 
     def __len__(self):
@@ -150,8 +213,9 @@ class ListVectorArray(VectorArrayInterface):
             return type(self)([self._list[i] for i in ind], dim=self._dim, copy=True)
 
     def append(self, other, o_ind=None, remove_from_other=False):
-        assert self.check_ind(o_ind)
+        assert other.check_ind(o_ind)
         assert other.dim == self.dim
+        assert other is not self or not remove_from_other
 
         other_list = other._list
         if not remove_from_other:
@@ -169,21 +233,25 @@ class ListVectorArray(VectorArrayInterface):
                 self._list.append(other_list.pop(o_ind))
             else:
                 self._list.extend([other_list[i] for i in o_ind])
-                other._list = [v for i, v in enumerate(other._vectors) if i not in o_ind]
+                remaining = sorted(set(xrange(len(other_list))) - set(o_ind))
+                other._list = [other_list[i] for i in remaining]
 
-    def remove(self, ind):
+    def remove(self, ind=None):
         assert self.check_ind(ind)
         if ind is None:
             self._list = []
         elif isinstance(ind, Number):
             del self._list[ind]
         else:
-            self._list = [v for i, v in enumerate(self._list) if i not in ind]
+            thelist = self._list
+            remaining = sorted(set(xrange(len(self))) - set(ind))
+            self._list = [thelist[i] for i in remaining]
 
     def replace(self, other, ind=None, o_ind=None, remove_from_other=False):
         assert self.check_ind(ind)
-        assert self.check_ind(o_ind)
+        assert other.check_ind(o_ind)
         assert other.dim == self.dim
+        assert other is not self or not remove_from_other
 
         if ind == None:
             c = type(self).empty(self.dim)
@@ -216,16 +284,22 @@ class ListVectorArray(VectorArrayInterface):
                 o_ind = xrange(len(other)) if o_ind is None else o_ind
                 assert len(ind) == len(o_ind)
                 if not remove_from_other:
+                    l = self._list
+                    # if other is self, we have to make a copy of our list, to prevent
+                    # messing things up, e.g. when swapping vectors
+                    other_list = list(l) if other is self else other._list
                     for i, oi in izip(ind, o_ind):
-                        self._list[i] = other._list[oi].copy()
+                        l[i] = other_list[oi].copy()
                 else:
                     for i, oi in izip(ind, o_ind):
                         self._list[i] = other._list[oi]
-                    other._list = [v for i, v in enumerate(other._list) if i not in o_ind]
+                    other_list = other._list
+                    remaining = sorted(set(xrange(len(other_list))) - set(o_ind))
+                    other._list = [other_list[i] for i in remaining]
 
     def almost_equal(self, other, ind=None, o_ind=None, rtol=None, atol=None):
         assert self.check_ind(ind)
-        assert self.check_ind(o_ind)
+        assert other.check_ind(o_ind)
         assert other.dim == self.dim
 
         if ind is None:
@@ -266,7 +340,7 @@ class ListVectorArray(VectorArrayInterface):
 
     def axpy(self, alpha, x, ind=None, x_ind=None):
         assert self.check_ind(ind)
-        assert self.check_ind(x_ind)
+        assert x.check_ind(x_ind)
 
         if ind is None:
             Y = iter(self._list)
@@ -318,7 +392,7 @@ class ListVectorArray(VectorArrayInterface):
 
     def dot(self, other, pairwise, ind=None, o_ind=None):
         assert self.check_ind(ind)
-        assert self.check_ind(o_ind)
+        assert other.check_ind(o_ind)
         assert self.dim == other.dim
 
         if ind is None:
@@ -457,3 +531,7 @@ class ListVectorArray(VectorArrayInterface):
 
     def __str__(self):
         return 'ListVectorArray of {} {}s of dimension {}'.format(len(self._list), str(self.vector_type), self._dim)
+
+
+class NumpyListVectorArray(ListVectorArray):
+    vector_type = NumpyVector

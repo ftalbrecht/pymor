@@ -69,7 +69,6 @@ class Concatenation(OperatorBase):
         if hasattr(first, 'restricted') and hasattr(second, 'restricted'):
             self.restricted = self._restricted
         self.name = name
-        self.lock()
 
     def apply(self, U, ind=None, mu=None):
         mu = self.parse_parameter(mu)
@@ -97,7 +96,6 @@ class ComponentProjection(OperatorBase):
         self.dim_range = len(components)
         self.type_source = type_source
         self.name = name
-        self.lock()
 
     def apply(self, U, ind=None, mu=None):
         assert self.check_parameter(mu)
@@ -120,7 +118,6 @@ class IdentityOperator(OperatorBase):
         self.dim_range = self.dim_source = dim
         self.type_range = self.type_source = type_source
         self.name = name
-        self.lock()
 
     def apply(self, U, ind=None, mu=None):
         assert self.check_parameter(mu)
@@ -131,80 +128,80 @@ class IdentityOperator(OperatorBase):
 
 class ConstantOperator(OperatorBase):
 
-    type_source = NumpyVectorArray
+    linear = False
 
-    dim_source = 0
-
-    def __init__(self, value, copy=True, name=None):
+    def __init__(self, value, dim_source, type_source=NumpyVectorArray, copy=True, name=None):
         assert isinstance(value, VectorArrayInterface)
         assert len(value) == 1
-
         super(ConstantOperator, self).__init__()
+        self.dim_source = dim_source
         self.dim_range = value.dim
+        self.type_source = type_source
         self.type_range = type(value)
         self.name = name
         self._value = value.copy() if copy else value
-        self.lock()
 
     def apply(self, U, ind=None, mu=None):
         assert self.check_parameter(mu)
-        assert isinstance(U, (NumpyVectorArray, Number))
-        if isinstance(U, Number):
-            assert U == 0.
-            assert ind == None
-            return self._value.copy()
+        assert isinstance(U, self.type_source) and U.dim == self.dim_source
+        count = len(U) if ind is None else 1 if isinstance(ind, Number) else len(ind)
+        return self._value.copy(ind=([0] * count))
+
+
+class VectorOperator(OperatorBase):
+
+    linear = True
+    type_source = NumpyVectorArray
+    dim_source = 1
+
+    def __init__(self, vector, copy=True, name=None):
+        assert isinstance(vector, VectorArrayInterface)
+        assert len(vector) == 1
+        super(VectorOperator, self).__init__()
+        self.dim_range = vector.dim
+        self.type_range = type(vector)
+        self.name = name
+        self._vector = vector.copy() if copy else vector
+
+    def as_vector(self, mu=None):
+        return self._vector.copy()
+
+    def apply(self, U, ind=None, mu=None):
+        assert self.check_parameter(mu)
+        assert isinstance(U, NumpyVectorArray) and U.dim == 1
+        count = len(U) if ind is None else 1 if isinstance(ind, Number) else len(ind)
+        R = self._vector.copy(ind=([0] * count))
+        for i, c in enumerate(U.data):
+            R.scal(c, ind=i)
+        return R
+
+
+class VectorFunctional(OperatorBase):
+
+    linear = True
+    type_range = NumpyVectorArray
+    dim_range = 1
+
+    def __init__(self, vector, product=None, copy=True, name=None):
+        assert isinstance(vector, VectorArrayInterface)
+        assert len(vector) == 1
+        assert product is None or isinstance(product, OperatorInterface)
+        super(VectorFunctional, self).__init__()
+        self.dim_source = vector.dim
+        self.type_source = type(vector)
+        self.name = name
+        if product is None:
+            self._vector = vector.copy() if copy else vector
         else:
-            assert U.dim == 0
-            if ind is not None:
-                raise NotImplementedError
-            return self._value.copy()
+            self._vector = product.apply(vector)
 
-    def as_vector(self):
-        '''Returns the image of the operator as a VectorArray of length 1.'''
-        return self._value.copy()
+    def as_vector(self, mu=None):
+        return self._vector.copy()
 
-    def __add__(self, other):
-        if isinstance(other, ConstantOperator):
-            return ConstantOperator(self._vector + other._vector)
-        elif isinstance(other, Number):
-            return ConstantOperator(self._vector + other)
-        else:
-            return NotImplemented
-
-    __radd__ = __add__
-
-    def __mul__(self, other):
-        return ConstantOperator(self._vector * other)
-
-    def projected(self, source_basis, range_basis, product=None, name=None):
-        assert issubclass(type(self._value), type(range_basis)) or issubclass(type(self._value), NumpyVectorArray)
-        assert source_basis is None or source_basis.dim == 0 and len(source_basis == 0)
-        assert range_basis is None or range_basis.dim == self._value.dim
-        assert product is None \
-            or (isinstance(product, OperatorInterface)
-                and range_basis is not None
-                and issubclass(type_range, product.type_source)
-                and issubclass(product.type_range, type(product))
-                and product.dim_range == product.dim_source == self._value.dim)
-
-        name = name or '{}_projected'.format(self.name)
-
-        if range_basis is None:
-            return self
-        elif product is None:
-            return ConstantOperator(NumpyVectorArray(range_basis.dot(self._value, pairwise=False).T, copy=False),
-                                    copy=False, name=name)
-        else:
-            return ConstantOperator(NumpyVectorArray(product.apply2(range_basis, self._value, pairwise=False).T,
-                                                     copy=False),
-                                    copy=False, name=name)
-
-    def projected_to_subbasis(self, dim_source=None, dim_range=None, name=None):
-        assert dim_source is None or dim_source == 0
-        assert dim_range is None or dim_range <= self.dim_range
-        assert issubclass(self.type_range, NumpyVectorArray), 'not implemented'
-        name = name or '{}_projected_to_subbasis'.format(self.name)
-        return ConstantOperator(NumpyVectorArray(self._value.data[:, :dim_range], copy=False), copy=False, name=name)
+    def apply(self, U, ind=None, mu=None):
+        assert self.check_parameter(mu)
+        assert isinstance(U, NumpyVectorArray) and U.dim == 1
+        return NumpyVectorArray(U.dot(self._vector, ind=ind), copy=False)
 
 
 class FixedParameterOperator(OperatorBase):
@@ -214,7 +211,6 @@ class FixedParameterOperator(OperatorBase):
         assert operator.check_parameter(mu)
         self.operator = operator
         self.mu = mu.copy()
-        self.lock()
 
     def apply(self, U, ind=None, mu=None):
         assert self.check_parameter(mu)

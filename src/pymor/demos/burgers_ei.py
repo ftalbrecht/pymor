@@ -75,7 +75,7 @@ from docopt import docopt
 
 import pymor.core as core
 core.logger.MAX_HIERACHY_LEVEL = 2
-from pymor.analyticalproblems.burgers import BurgersProblem
+from pymor.analyticalproblems.burgers import Burgers2DProblem
 from pymor.discretizers.advection import discretize_nonlinear_instationary_advection_fv
 from pymor.domaindiscretizers import discretize_domain_default
 from pymor.grids import RectGrid, TriaGrid
@@ -116,8 +116,8 @@ def burgers_demo(args):
     print('Setup Problem ...')
     grid_type_map = {'rect': RectGrid, 'tria': TriaGrid}
     domain_discretizer = partial(discretize_domain_default, grid_type=grid_type_map[args['--grid-type']])
-    problem = BurgersProblem(vx=args['--vx'], vy=args['--vy'], initial_data=args['--initial-data'],
-                             parameter_range=(args['EXP_MIN'], args['EXP_MAX']), torus=not args['--not-periodic'])
+    problem = Burgers2DProblem(vx=args['--vx'], vy=args['--vy'], initial_data_type=args['--initial-data'],
+                               parameter_range=(args['EXP_MIN'], args['EXP_MAX']), torus=not args['--not-periodic'])
 
     print('Discretize ...')
     discretizer = discretize_nonlinear_instationary_advection_fv
@@ -131,11 +131,14 @@ def burgers_demo(args):
 
     if args['--plot-solutions']:
         print('Showing some solutions')
-        for mu in discretization.parameter_space.sample_randomly(2):
-            print('Solving for exponent = \n{} ... '.format(mu['exponent']))
+        Us = tuple()
+        legend = tuple()
+        for mu in discretization.parameter_space.sample_uniformly(4):
+            print('Solving for exponent = {} ... '.format(mu['exponent']))
             sys.stdout.flush()
-            U = discretization.solve(mu)
-            discretization.visualize(U)
+            Us = Us + (discretization.solve(mu),)
+            legend = legend + ('exponent: {}'.format(mu['exponent']),)
+        discretization.visualize(Us, legend=legend, title='Detailed Solutions', block=True)
 
 
     ei_discretization, ei_data = interpolate_operators(discretization, 'operator',
@@ -148,27 +151,31 @@ def burgers_demo(args):
 
     if args['--plot-ei-err']:
         print('Showing some EI errors')
+        ERRs = tuple()
+        legend = tuple()
         for mu in discretization.parameter_space.sample_randomly(2):
             print('Solving for exponent = \n{} ... '.format(mu['exponent']))
             sys.stdout.flush()
             U = discretization.solve(mu)
             U_EI = ei_discretization.solve(mu)
             ERR = U - U_EI
+            ERRs = ERRs + (ERR,)
+            legend = legend + ('exponent: {}'.format(mu['exponent']),)
             print('Error: {}'.format(np.max(discretization.l2_norm(ERR))))
-            discretization.visualize(ERR)
+        discretization.visualize(ERRs, legend=legend, title='EI Errors', separate_colorbars=True)
 
         print('Showing interpolation DOFs ...')
         U = np.zeros(U.dim)
         dofs = ei_discretization.operator.interpolation_dofs
         U[dofs] = np.arange(1, len(dofs) + 1)
         U[ei_discretization.operator.source_dofs] += int(len(dofs)/2)
-        discretization.visualize(NumpyVectorArray(U))
+        discretization.visualize(NumpyVectorArray(U), title='Interpolation DOFs')
 
 
     print('RB generation ...')
 
-    def reductor(discretization, rb):
-        return reduce_generic_rb(ei_discretization, rb)
+    def reductor(discretization, rb, extends=None):
+        return reduce_generic_rb(ei_discretization, rb, extends=extends)
 
     extension_algorithm = partial(pod_basis_extension)
 
@@ -187,7 +194,7 @@ def burgers_demo(args):
 
     def error_analysis(N, M):
         print('N = {}, M = {}: '.format(N, M), end='')
-        rd, rc = reduce_to_subbasis(rb_discretization, N, reconstructor)
+        rd, rc, _ = reduce_to_subbasis(rb_discretization, N, reconstructor)
         rd = rd.with_(operator=rd.operator.projected_to_subbasis(dim_collateral=M))
         l2_err_max = -1
         mumax = None
@@ -268,7 +275,10 @@ def burgers_demo(args):
                                rstride=1, cstride=1, cmap='jet')
         plt.show()
     if args['--plot-err']:
-        discretization.visualize(U - URB)
+        U = discretization.solve(mumax)
+        URB = reconstructor.reconstruct(rb_discretization.solve(mumax))
+        discretization.visualize((U, URB, U - URB), legend=('Detailed Solution', 'Reduced Solution', 'Error'),
+                                 title='Maximum Error Solution', separate_colorbars=True)
 
 
 if __name__ == '__main__':

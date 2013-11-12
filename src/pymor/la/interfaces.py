@@ -162,7 +162,7 @@ class VectorArrayInterface(BasicInterface):
         pass
 
     @abstractmethod
-    def remove(self, ind):
+    def remove(self, ind=None):
         '''Remove vectors from the array.
 
         Parameters
@@ -453,5 +453,13 @@ class VectorArrayInterface(BasicInterface):
     def check_ind(self, ind):
         '''Check if `ind` is an admissable list of indices in the sense of the class documentation.'''
         return (ind is None or
-                isinstance(ind, (Number, list)) or
-                isinstance(ind, np.ndarray) and ind.ndim == 1)
+                isinstance(ind, Number) and 0 <= ind < len(self) or
+                isinstance(ind, list) and (len(ind) == 0 or 0 <= min(ind) and max(ind) < len(self)) or
+                isinstance(ind, np.ndarray) and ind.ndim == 1
+                                            and (len(ind) == 0 or 0 <= np.min(ind) and np.max(ind) < len(self)))
+
+    def len_ind(self, ind):
+        return len(self) if ind is None else 1 if isinstance(ind, Number) else len(ind)
+
+    def len_ind_unique(self, ind):
+        return len(self) if ind is None else 1 if isinstance(ind, Number) else len(set(ind))

@@ -32,10 +32,14 @@ TOX_RECIPE = {'name': 'tox',
                        'system': [],
                        'local': deps.install_requires + deps.install_suggests,
                        'venv_cmd': []}
+TOX_RECIPE = {'name': 'tox',
+                       'system': [],
+                       'local': deps.install_requires + deps.install_suggests,
+                       'venv_cmd': []}
 UBUNTU_13_04_RECIPE = {'name': 'Ubuntu 13.04',
                        'system': [  'sudo apt-get install build-essential cmake gfortran libqt4-dev libsuitesparse-dev '
                                   + 'libatlas-base-dev libfreetype6-dev libpng12-dev python2.7 python2.7-dev '
-                                  + 'python2.7-tk python-pip python-virtualenv tk-dev swig' ],
+                                  + 'python2.7-tk python-pip python-virtualenv tk-dev swig python-pyvtk' ],
                        'local': deps.install_requires + deps.install_suggests,
                        'venv_cmd': ['/usr/bin/virtualenv']}
 ARCH_RECIPE = {'name': 'Arch Linux',
@@ -190,7 +194,7 @@ To deactivate the virtualenv call
     deactivate
 
 Matplotlib uses by default its Tk backend. To use the Qt backend, create a
-file ~/.matplotlib/matplotlibrc containing the lines
+file ~/.config/matplotlib/matplotlibrc containing the lines
 
     backend      :  Qt4Agg
     backend.qt4  :  PySide

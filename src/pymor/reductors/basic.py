@@ -9,8 +9,6 @@ import numpy as np
 import pymor.core as core
 from pymor.la import NumpyVectorArray
 from pymor.la.blockvectorarray import BlockVectorArray
-from pymor.core.cache import Cachable, NO_CACHE_CONFIG
-from pymor.operators import rb_project_operator
 
 
 class GenericRBReconstructor(core.BasicInterface):
@@ -36,11 +34,9 @@ class GenericRBReconstructor(core.BasicInterface):
             return GenericRBReconstructor(self.RB.copy(ind=range(dim)))
 
 
-def reduce_generic_rb(discretization, RB, product=None, disable_caching=True):
+def reduce_generic_rb(discretization, RB, operator_product=None, vector_product=None,
+                      disable_caching=True, extends=None):
     '''Generic reduced basis reductor.
-
-    Reduces a discretization by applying `operators.rb_project_operator` to
-    each of its `operators`.
 
     Parameters
     ----------
@@ -48,9 +44,13 @@ def reduce_generic_rb(discretization, RB, product=None, disable_caching=True):
         The discretization which is to be reduced.
     RB
         The reduced basis (i.e. an array of vectors) on which to project.
-    product
-        Scalar product for the projection. (See
+    operator_product
+        Scalar product for the projection of operators. (See
         `operators.constructions.ProjectedOperator`)
+    vector_product
+        Scalar product for the projection of vector_operators
+        (A typical case would be the `initial_data` operator holding the
+        initial data of a Cauchy problem.)
     disable_caching
         If `True`, caching of the solutions of the reduced discretization
         is disabled.
@@ -63,27 +63,34 @@ def reduce_generic_rb(discretization, RB, product=None, disable_caching=True):
         The reconstructor providing a `reconstruct(U)` method which reconstructs
         high-dimensional solutions from solutions U of the reduced discretization.
     '''
+    assert extends is None or len(extends) == 3
 
     if RB is None:
         RB = discretization.type_solution.empty(discretization.dim_solution)
 
-    projected_operators = {k: rb_project_operator(op, RB, product=product)
+    projected_operators = {k: op.projected(source_basis=RB, range_basis=RB, product=operator_product) if op else None
                            for k, op in discretization.operators.iteritems()}
+    projected_functionals = {k: f.projected(source_basis=RB, range_basis=None, product=operator_product) if f else None
+                             for k, f in discretization.functionals.iteritems()}
+    projected_vector_operators = {k: (op.projected(source_basis=None, range_basis=RB, product=vector_product) if op
+                                      else None)
+                                  for k, op in discretization.vector_operators.iteritems()}
 
     if discretization.products is not None:
-        projected_products = {k: rb_project_operator(op, RB, product=product)
-                              for k, op in discretization.products.iteritems()}
+        projected_products = {k: p.projected(source_basis=RB, range_basis=RB) for k, p in discretization.products.iteritems()}
     else:
         projected_products = None
 
     caching = None if disable_caching else discretization.caching
 
-    rd = discretization.with_(operators=projected_operators, products=projected_products, visualizer=None,
-                              estimator=None, caching=caching, name=discretization.name + '_reduced')
+    rd = discretization.with_(operators=projected_operators, functionals=projected_functionals,
+                              vector_operators=projected_vector_operators,
+                              products=projected_products, visualizer=None, estimator=None,
+                              caching=caching, name=discretization.name + '_reduced')
     rd.disable_logging()
     rc = GenericRBReconstructor(RB)
 
-    return rd, rc
+    return rd, rc, {}
 
 
 class SubbasisReconstructor(core.BasicInterface):
@@ -108,10 +115,12 @@ def reduce_to_subbasis(discretization, dim, reconstructor=None):
 
     dim_solution = discretization.dim_solution
 
-    projected_operators = {k: op.projected_to_subbasis(dim_source=dim if op.dim_source == dim_solution else None,
-                                                       dim_range=dim if op.dim_range == dim_solution else None)
-                               if op is not None else None
+    projected_operators = {k: op.projected_to_subbasis(dim_source=dim, dim_range=dim) if op is not None else None
                            for k, op in discretization.operators.iteritems()}
+    projected_functionals = {k: f.projected_to_subbasis(dim_source=dim, dim_range=None) if f is not None else None
+                            for k, f in discretization.functionals.iteritems()}
+    projected_vector_operators = {k: op.projected_to_subbasis(dim_source=None, dim_range=dim) if op else None
+                                  for k, op in discretization.vector_operators.iteritems()}
 
     if discretization.products is not None:
         projected_products = {k: op.projected_to_subbasis(dim_source=dim, dim_range=dim)
@@ -131,8 +140,10 @@ def reduce_to_subbasis(discretization, dim, reconstructor=None):
     else:
         estimator = None
 
-    rd = discretization.with_(operators=projected_operators, products=projected_products, visualizer=None,
-                              estimator=estimator, name=discretization.name + '_reduced_to_subbasis')
+    rd = discretization.with_(operators=projected_operators, functionals=projected_functionals,
+                              vector_operators = projected_vector_operators,
+                              products=projected_products, visualizer=None, estimator=estimator,
+                              name=discretization.name + '_reduced_to_subbasis')
     rd.disable_logging()
 
     if reconstructor is not None and hasattr(reconstructor, 'restricted_to_subbasis'):
@@ -141,4 +152,4 @@ def reduce_to_subbasis(discretization, dim, reconstructor=None):
         rc = SubbasisReconstructor(next(discretization.operators.itervalues()).dim_source, dim,
                                    old_recontructor=reconstructor)
 
-    return rd, rc
+    return rd, rc, {}

@@ -9,12 +9,12 @@ import numpy as np
 
 from numbers import Number
 
-from pymor.core.interfaces import BasicInterface, abstractmethod, abstractproperty, abstractstaticmethod
+from pymor.core import ImmutableInterface, abstractmethod, abstractproperty, abstractstaticmethod
 from pymor.tools import Named
 from pymor.parameters import Parametric
 
 
-class OperatorInterface(BasicInterface, Parametric, Named):
+class OperatorInterface(ImmutableInterface, Parametric, Named):
     '''Interface for parameter dependent discrete operators.
 
     Every discrete operator is viewed as a map ::
@@ -151,6 +151,22 @@ class OperatorInterface(BasicInterface, Parametric, Named):
         ------
         InversionError
             Is raised, if the operator cannot be inverted.
+        '''
+        pass
+
+    @abstractmethod
+    def as_vector(self, mu=None):
+        '''Return vector representation of linear functional or vector operator.
+
+        This method may only be called on linear operators with
+        `dim_range == 1` and `type_source == NumpyVectorArray`
+        (functionals) or `dim_source == 1` and `type_source ==NumpyVectorArray`
+        (vector like operators).
+
+        In the case of a functional, the identity
+            operator.as_vector(mu).dot(U) == operator.apply(U, mu)
+        holds. In the case of a vector like operator we have
+            operator.as_vector(mu) == operator.apply(NumpyVectorArray(1), mu).
         '''
         pass
 

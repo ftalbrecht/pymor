@@ -95,11 +95,14 @@ def thermalblock_demo(args):
 
     if args['--plot-solutions']:
         print('Showing some solutions')
+        Us = tuple()
+        legend = tuple()
         for mu in discretization.parameter_space.sample_randomly(2):
             print('Solving for diffusion = \n{} ... '.format(mu['diffusion']))
             sys.stdout.flush()
-            U = discretization.solve(mu)
-            discretization.visualize(U)
+            Us = Us + (discretization.solve(mu),)
+            legend = legend + (str(mu['diffusion']),)
+        discretization.visualize(Us, legend=legend, title='Detailed Solutions for different parameters', block=True)
 
 
     print('RB generation ...')
@@ -153,7 +156,7 @@ def thermalblock_demo(args):
         Ns = np.linspace(1, real_rb_size, N_count).astype(np.int)
     else:
         Ns = np.array([real_rb_size])
-    rd_rcs = [reduce_to_subbasis(rb_discretization, N, reconstructor) for N in Ns]
+    rd_rcs = [reduce_to_subbasis(rb_discretization, N, reconstructor)[:2] for N in Ns]
     mus = list(discretization.parameter_space.sample_randomly(args['--test']))
 
     errs, err_mus, ests, est_mus, conds, cond_mus = zip(*(error_analysis(discretization, rd, rc, mus) for rd, rc in rd_rcs))
@@ -196,7 +199,8 @@ def thermalblock_demo(args):
     if args['--plot-err']:
         U = discretization.solve(mumax)
         URB = reconstructor.reconstruct(rb_discretization.solve(mumax))
-        discretization.visualize(U - URB)
+        discretization.visualize((U, URB, U - URB), legend=('Detailed Solution', 'Reduced Solution', 'Error'),
+                                 title='Maximum Error Solution', separate_colorbars=True, block=True)
 
 
 if __name__ == '__main__':

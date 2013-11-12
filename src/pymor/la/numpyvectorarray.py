@@ -67,7 +67,8 @@ class NumpyVectorArray(VectorArrayInterface, Communicable):
             return C
 
     def append(self, other, o_ind=None, remove_from_other=False):
-        assert self.check_ind(o_ind)
+        assert other.check_ind(o_ind)
+        assert other is not self or not remove_from_other
 
         if o_ind is None:
             len_other = other._len
@@ -90,7 +91,7 @@ class NumpyVectorArray(VectorArrayInterface, Communicable):
         if remove_from_other:
             other.remove(o_ind)
 
-    def remove(self, ind):
+    def remove(self, ind=None):
         assert self.check_ind(ind)
 
         if ind is None:
@@ -98,31 +99,45 @@ class NumpyVectorArray(VectorArrayInterface, Communicable):
             self._len = 0
         else:
             if hasattr(ind, '__len__'):
-                self._array = self._array[list(x for x in xrange(len(self)) if x not in ind)]
+                if len(ind) == 0:
+                    return
+                remaining = sorted(set(xrange(len(self))) - set(ind))
+                self._array = self._array[remaining]
             else:
-                self._array = self._array[range(ind) + range(ind + 1, self._len + 1)]
+                assert -self._len < ind < self._len
+                self._array = self._array[range(ind) + range(ind + 1, self._len)]
             self._len = self._array.shape[0]
         if not self._array.flags['OWNDATA']:
             self._array = self._array.copy()
 
     def replace(self, other, ind=None, o_ind=None, remove_from_other=False):
         assert self.check_ind(ind)
-        assert self.check_ind(o_ind)
+        assert other.check_ind(o_ind)
         assert self.dim == other.dim
+        assert other is not self or not remove_from_other
 
         if ind is None:
             if o_ind is None:
+                if other is self:
+                    return
+                assert other._len == self._len
                 self._array = other._array[:other._len]
             else:
                 if not hasattr(o_ind, '__len__'):
                     o_ind = [o_ind]
+                assert self._len == len(o_ind)
                 self._array = other._array[o_ind]
             self._len = self._array.shape[0]
         else:
+            len_ind = self.len_ind(ind)
+            other_array = np.array(self._array) if other is self else other._array
             if o_ind is None:
-                self._array[ind] = other._array[:other._len]
+                assert len_ind == other._len
+                self._array[ind] = other_array[:other._len]
             else:
-                self._array[ind] = other._array[o_ind]
+                len_oind = other.len_ind(o_ind)
+                assert len_ind == len_oind
+                self._array[ind] = other_array[o_ind]
         assert self._array.flags['OWNDATA']
 
         if remove_from_other:
@@ -130,7 +145,7 @@ class NumpyVectorArray(VectorArrayInterface, Communicable):
 
     def almost_equal(self, other, ind=None, o_ind=None, rtol=None, atol=None):
         assert self.check_ind(ind)
-        assert self.check_ind(o_ind)
+        assert other.check_ind(o_ind)
         assert self.dim == other.dim
 
         A = self._array[:self._len] if ind is None else \
@@ -153,7 +168,7 @@ class NumpyVectorArray(VectorArrayInterface, Communicable):
 
     def axpy(self, alpha, x, ind=None, x_ind=None):
         assert self.check_ind(ind)
-        assert self.check_ind(x_ind)
+        assert x.check_ind(x_ind)
         assert self.dim == x.dim
 
         if alpha == 0:
@@ -179,7 +194,7 @@ class NumpyVectorArray(VectorArrayInterface, Communicable):
 
     def dot(self, other, pairwise, ind=None, o_ind=None):
         assert self.check_ind(ind)
-        assert self.check_ind(o_ind)
+        assert other.check_ind(o_ind)
         assert self.dim == other.dim
 
         A = self._array[:self._len] if ind is None else \
@@ -246,7 +261,7 @@ class NumpyVectorArray(VectorArrayInterface, Communicable):
 
         A = np.abs(A)
         max_ind = np.argmax(A, axis=1)
-        max_val = np.max(A, axis=1)
+        max_val = A[np.arange(len(A)), max_ind]
         return (max_ind, max_val)
 
     def __str__(self):
