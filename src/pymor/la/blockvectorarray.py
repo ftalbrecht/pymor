@@ -42,7 +42,6 @@ class BlockVectorArray(VectorArrayInterface):
         self.type_blocks = [type(block) for block in self._blocks]
 
     def block(self, ind, copy=False):
-        assert self.check_ind(ind)
         if isinstance(ind, list):
             return [self._blocks[ii].copy() for ii in ind] if copy else [self._blocks[ii] for ii in ind]
         else:

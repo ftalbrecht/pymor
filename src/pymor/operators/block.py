@@ -55,7 +55,6 @@ class BlockOperator(OperatorInterface):
             self.invert_options = None
             self.type_range = BlockVectorArray
         self.type_source = BlockVectorArray
-        self.lock()
 
     def apply(self, U, ind=None, mu=None):
         raise Exception('Not implemented yet!')
@@ -77,7 +76,7 @@ class BlockOperator(OperatorInterface):
         assert all([self._blocks[ii][jj] is None if jj != ii else True
                     for jj in np.arange(self.num_source_blocks)
                    for ii in np.arange(self.num_range_blocks)])
-        return sum([self._blocks[ii][ii].apply2(V.block(ii, copy=False), U.block(ii, copy=False))
+        return sum([self._blocks[ii][ii].apply2(V.block(ii, copy=False), U.block(ii, copy=False), pairwise)
                     for ii in np.arange(self.num_range_blocks)])
 
     def apply_inverse(self, U, ind=None, mu=None, options=None):

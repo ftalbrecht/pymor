@@ -198,8 +198,9 @@ def block_basis_extension(basis, U, extension_algorithm):
         local_bases = [None for jj in np.arange(num_blocks)]
     else:
         raise ExtensionError('Unknown basis given!')
+    # TODO think about hierarchic extension
     if isinstance(extension_algorithm, list):
         assert len(extension_algorithm) == num_blocks
-        return [extension_algorithm[jj](local_bases[jj], U.block(jj, copy=False)) for jj in np.arange(num_blocks)]
+        return [extension_algorithm[jj](local_bases[jj], U.block(jj, copy=False))[0] for jj in np.arange(num_blocks)], {'hierarchic': False}
     else:
-        return [extension_algorithm(local_bases[jj], U.block(jj, copy=False)) for jj in np.arange(num_blocks)]
+        return [extension_algorithm(local_bases[jj], U.block(jj, copy=False))[0] for jj in np.arange(num_blocks)], {'hierarchic': False}
