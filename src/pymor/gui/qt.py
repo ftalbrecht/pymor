@@ -10,13 +10,15 @@ import math as m
 import numpy as np
 
 from PySide.QtGui import (QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QSlider, QApplication, QLCDNumber,
-                          QSizePolicy, QAction, QStyle, QToolBar, QLabel)
+                          QSizePolicy, QAction, QStyle, QToolBar, QLabel, QFileDialog)
 from PySide.QtCore import Qt, QCoreApplication, QTimer
 from pymor.core import BasicInterface
 from pymor.la.interfaces import Communicable
+from pymor.la import NumpyVectorArray
 from pymor.grids import RectGrid, TriaGrid, OnedGrid
 from pymor.gui.glumpy import GlumpyPatchWidget, ColorBarWidget
 from pymor.gui.matplotlib import Matplotlib1DWidget
+from pymor.tools.vtkio import write_vtk
 
 
 class PlotMainWindow(QWidget):
@@ -66,6 +68,10 @@ class PlotMainWindow(QWidget):
             toolbar.addAction(self.a_step_backward)
             toolbar.addAction(self.a_step_forward)
             toolbar.addAction(self.a_loop)
+            if hasattr(self, 'save'):
+                self.a_save = QAction(self.style().standardIcon(QStyle.SP_DialogSaveButton), 'Save', self)
+                toolbar.addAction(self.a_save)
+                self.a_save.triggered.connect(self.save)
             hlayout.addWidget(toolbar)
 
             self.speed = QSlider(Qt.Horizontal)
@@ -89,6 +95,15 @@ class PlotMainWindow(QWidget):
             self.a_step_backward.triggered.connect(self.step_backward)
 
             self.speed.setValue(50)
+
+        elif hasattr(self, 'save'):
+            hlayout = QHBoxLayout()
+            toolbar = QToolBar()
+            self.a_save = QAction(self.style().standardIcon(QStyle.SP_DialogSaveButton), 'Save', self)
+            toolbar.addAction(self.a_save)
+            hlayout.addWidget(toolbar)
+            layout.addLayout(hlayout)
+            self.a_save.triggered.connect(self.save)
 
         self.setLayout(layout)
         self.plot = plot
@@ -220,6 +235,19 @@ def visualize_glumpy_patch(grid, U, bounding_box=[[0, 0], [1, 1]], codim=2, titl
                         plot.set(u[ind])
 
             super(MainWindow, self).__init__(U, PlotWidget(), title=title, length=len(U[0]))
+            self.grid = grid
+            self.codim = codim
+
+        def save(self):
+            filename = QFileDialog.getSaveFileName(self, 'Save as vtk file')[0]
+            base_name = filename.split('.vtu')[0].split('.vtk')[0].split('.pvd')[0]
+            if base_name:
+                if len(self.U) == 1:
+                    write_vtk(self.grid, NumpyVectorArray(self.U[0], copy=False), base_name, codim=self.codim)
+                else:
+                    for i, u in enumerate(self.U):
+                        write_vtk(self.grid, NumpyVectorArray(u, copy=False), '{}-{}'.format(base_name, i),
+                                  codim=self.codim)
 
     launch_qt_app(lambda: MainWindow(grid, U, bounding_box, codim, title=title, legend=legend,
                                      separate_colorbars=separate_colorbars), block)
@@ -239,6 +267,7 @@ def visualize_matplotlib_1d(grid, U, codim=1, title=None, legend=None, block=Fal
 
             plot_widget = Matplotlib1DWidget(None, grid, count=len(U), vmin=np.min(U), vmax=np.max(U), legend=legend, codim=codim)
             super(MainWindow, self).__init__(U, plot_widget, title=title, length=len(U[0]))
+            self.grid = grid
 
     launch_qt_app(lambda: MainWindow(grid, U, codim, title=title, legend=legend), block)
 
@@ -253,10 +282,18 @@ class GlumpyPatchVisualizer(BasicInterface):
         self.codim = codim
         self.block = block
 
-    def visualize(self, U, discretization, title=None, legend=None, separate_colorbars=False, block=None):
-        block = self.block if block is None else block
-        visualize_glumpy_patch(self.grid, U, bounding_box=self.bounding_box, codim=self.codim, title=title,
-                               legend=legend, separate_colorbars=separate_colorbars, block=block)
+    def visualize(self, U, discretization, title=None, legend=None, separate_colorbars=False, block=None, filename=None):
+        assert isinstance(U, (Communicable, tuple))
+        if filename:
+            if isinstance(U, Communicable):
+                write_vtk(self.grid, U, filename, codim=self.codim)
+            else:
+                for i, u in enumerate(self.U):
+                    write_vtk(self.grid, u, '{}-{}'.format(filename, i), codim=self.codim)
+        else:
+            block = self.block if block is None else block
+            visualize_glumpy_patch(self.grid, U, bounding_box=self.bounding_box, codim=self.codim, title=title,
+                                   legend=legend, separate_colorbars=separate_colorbars, block=block)
 
 
 class Matplotlib1DVisualizer(BasicInterface):
