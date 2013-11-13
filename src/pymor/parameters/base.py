@@ -9,8 +9,8 @@ from numbers import Number
 
 import numpy as np
 
-from pymor.tools import float_cmp_all
 from pymor import defaults
+from pymor.tools import float_cmp_all
 
 
 class ParameterType(dict):
@@ -258,7 +258,9 @@ class Parameter(dict):
                 else:
                     return '%(n).2e' % {'n': e}
 
-            if len(array) == 0:
+            if array.ndim == 0:
+                return str(array.item())
+            elif len(array) == 0:
                 return ''
             elif len(array) == 1:
                 if defaults.compact_print:
