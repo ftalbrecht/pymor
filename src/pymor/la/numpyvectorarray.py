@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# This file is part of the pyMor project (http://www.pymor.org).
+# This file is part of the pyMOR project (http://www.pymor.org).
 # Copyright Holders: Felix Albrecht, Rene Milk, Stephan Rave
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
@@ -170,6 +170,7 @@ class NumpyVectorArray(VectorArrayInterface, Communicable):
         assert self.check_ind(ind)
         assert x.check_ind(x_ind)
         assert self.dim == x.dim
+        assert self.len_ind(ind) == x.len_ind(x_ind)
 
         if alpha == 0:
             return
@@ -203,6 +204,7 @@ class NumpyVectorArray(VectorArrayInterface, Communicable):
                 other._array[o_ind] if hasattr(o_ind, '__len__') else other._array[o_ind:o_ind + 1]
 
         if pairwise:
+            assert self.len_ind(ind) == other.len_ind(o_ind)
             return np.sum(A * B, axis=1)
         else:
             return A.dot(B.T)

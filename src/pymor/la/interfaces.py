@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# This file is part of the pyMor project (http://www.pymor.org).
+# This file is part of the pyMOR project (http://www.pymor.org).
 # Copyright Holders: Felix Albrecht, Rene Milk, Stephan Rave
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
@@ -247,9 +247,8 @@ class VectorArrayInterface(BasicInterface):
 
             self[ind] = alpha*x[o_ind] + self[ind]
 
-        If the length of `x` (`o_ind`) is 1, the one specified vector is added to all
-        vectors of `self` specified by `ind`. Otherwise, the lengths of `self` (`ind`) and
-        `x` (`x_ind`) have to be equal. The dimensions of `self` and `x` have to agree.
+        The dimensions of `self` and `x` as well as the lengths of `self` (`ind`) and
+        `x` (`x_ind`) have to agree.
 
         Parameters
         ----------

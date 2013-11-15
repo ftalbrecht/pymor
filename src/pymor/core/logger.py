@@ -1,4 +1,4 @@
-# This file is part of the pyMor project (http://www.pymor.org).
+# This file is part of the pyMOR project (http://www.pymor.org).
 # Copyright Holders: Felix Albrecht, Rene Milk, Stephan Rave
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
@@ -81,6 +81,8 @@ class ColoredFormatter(logging.Formatter):
         logging.Formatter.__init__(self, formatter_message(FORMAT, self.use_color), datefmt='%M:%S')
 
     def format(self, record):
+        if not record.msg:
+            return ''
         tokens = record.name.split('.')
         record.name = '.'.join(tokens[1:MAX_HIERACHY_LEVEL])
         if len(tokens) > MAX_HIERACHY_LEVEL - 1:
