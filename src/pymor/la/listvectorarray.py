@@ -534,16 +534,6 @@ class ListVectorArray(VectorArrayInterface):
     def __str__(self):
         return 'ListVectorArray of {} {}s of dimension {}'.format(len(self._list), str(self.vector_type), self._dim)
 
-vector_array_types = dict()
 
-def create_list_vector_array_type(vec_type):
-
-    type_name = vec_type.__name__
-    if not vector_array_types.has_key(type_name):
-
-        class TypedListVectorArray(ListVectorArray):
-            vector_type = vec_type
-
-        TypedListVectorArray.__name__ = '{}_ListVectorArray'.format(type_name)
-        vector_array_types[type_name] = TypedListVectorArray
-    return vector_array_types[type_name]
+class NumpyListVectorArray(ListVectorArray):
+    vector_type = NumpyVector
