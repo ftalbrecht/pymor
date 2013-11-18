@@ -6,15 +6,16 @@ from __future__ import absolute_import, division, print_function
 
 import time
 from itertools import izip
+import numpy as np
 
 from pymor.algorithms.basisextension import trivial_basis_extension
 from pymor.core import getLogger
 from pymor.core.exceptions import ExtensionError
 
 
-def greedy(discretization, reductor, samples, initial_basis=None, use_estimator=True, error_norm=None,
-           extension_algorithm=trivial_basis_extension, target_error=None, max_extensions=None):
-    '''Greedy basis generation algorithm.
+def greedy_lrbms(discretization, reductor, samples, initial_basis=None, use_estimator=True, error_norm=None,
+                 extension_algorithm=trivial_basis_extension, target_error=None, max_extensions=None):
+    '''Greedy basis generation algorithm in the LRBMS context.
 
     This algorithm generates a reduced basis by iteratively adding the
     worst approximated solution snapshot for a given training set to the
@@ -88,8 +89,14 @@ def greedy(discretization, reductor, samples, initial_basis=None, use_estimator=
 
     logger = getLogger('pymor.algorithms.greedy.greedy')
     samples = list(samples)
-    logger.info('Started greedy search on {} samples'.format(len(samples)))
+    assert isinstance(initial_basis, list)
+    num_subdomains = len(initial_basis)
+    if isinstance(extension_algorithm, list):
+        assert len(extension_algorithm) == num_subdomains
+    else:
+        extension_algorithm = [extension_algorithm for ss in np.arange(num_subdomains)]
     basis = initial_basis
+    logger.info('Started greedy search on {} samples, {} spatial subdomains'.format(len(samples), num_subdomains))
 
     tic = time.time()
     extensions = 0
@@ -125,17 +132,24 @@ def greedy(discretization, reductor, samples, initial_basis=None, use_estimator=
 
         logger.info('Extending with snapshot for mu = {}'.format(max_err_mu))
         U = discretization.solve(max_err_mu)
-        try:
-            basis, extension_data = extension_algorithm(basis, U)
-        except ExtensionError:
-            logger.info('Extension failed. Stopping now.')
-            break
-        extensions += 1
-        if not 'hierarchic' in extension_data:
-            logger.warn('Extension algorithm does not report if extension was hierarchic. Assuming it was\'nt ..')
+        assert U.num_blocks == num_subdomains
+        local_bases_extended = 0
+        for ss in np.arange(num_subdomains):
+            try:
+                basis[ss], _  = extension_algorithm[ss](basis[ss], U.block(ss))
+                local_bases_extended += 1
+            except ExtensionError:
+                logger.info('Extension failed on subdomain {}.'.format(ss))
+            # if not 'hierarchic' in extension_data:
+            #     logger.warn('Extension algorithm does not report if extension was hierarchic. Assuming it was\'nt ..')
             hierarchic = False
-        else:
-            hierarchic = extension_data['hierarchic']
+            # else:
+            #     hierarchic = extension_data['hierarchic']
+        extensions += 1
+
+        if local_bases_extended == 0:
+            logger.info('Extension failed on all subdomains. Stopping now.')
+            break
 
         logger.info('')
 
