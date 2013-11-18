@@ -116,7 +116,7 @@ discretization, _ = discretize_elliptic_cg(problem, diameter=m.sqrt(2) / {grid})
     extension_algorithm = extension_algorithms[args['--extension-alg']]
     greedy_data = greedy(discretization, reductor, discretization.parameter_space.sample_uniformly(args['SNAPSHOTS']),
                          use_estimator=args['--with-estimator'], error_norm=discretization.h1_norm,
-                         initial_data = discretization.operator.type_source.empty(dim=discretization.operator.dim_source),
+                         initial_basis = discretization.operator.type_source.empty(dim=discretization.operator.dim_source),
                          extension_algorithm=extension_algorithm, max_extensions=args['RBSIZE'])
     rb_discretization, reconstructor = greedy_data['reduced_discretization'], greedy_data['reconstructor']
 
@@ -143,7 +143,7 @@ discretization, _ = discretize_elliptic_cg(problem, diameter=m.sqrt(2) / {grid})
         print('H1-error = {}, condition = {}'.format(h1_err, cond))
     toc = time.time()
     t_est = toc - tic
-    real_rb_size = len(greedy_data['data'])
+    real_rb_size = len(greedy_data['basis'])
 
     print('''
     *** RESULTS ***

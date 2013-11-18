@@ -182,9 +182,11 @@ class VectorArrayInterface(BasicInterface):
             A `VectorArray` containing the replacement vectors.
         ind
             Indices of the vectors that are to be replaced (see class documentation).
+            Repeated indices are forbidden.
         o_ind
             Indices of the replacement vectors (see class documentation).
             `len(ind)` has to agree with `len(o_ind)`.
+            Repeated indices are allowed.
         remove_from_other
             If `True`, the new vectors are removed from `other?.
             For list-like implementations of `VectorArray` this can be
@@ -236,6 +238,7 @@ class VectorArrayInterface(BasicInterface):
             The scalar coefficient with which the vectors in `self` are multiplied
         ind
             Indices of the vectors of `self` that are to be scaled (see class documentation).
+            Repeated indices are forbidden.
         '''
         pass
 
@@ -258,8 +261,10 @@ class VectorArrayInterface(BasicInterface):
             A `VectorArray` containing the x-summands.
         ind
             Indices of the vectors of `self` that are to be added (see class documentation).
+            Repeated indices are forbidden.
         x_ind
             Indices of the vectors in `x` that are to be added (see class documentation).
+            Repeated indices are allowed.
         '''
         pass
 
@@ -365,8 +370,12 @@ class VectorArrayInterface(BasicInterface):
         A numpy array `result` such that `result[i]` contains the norm
         of `self[ind][i]`.
         '''
-        _, max_val = self.amax(ind)
-        return max_val
+        if self.dim == 0:
+            assert self.check_ind(ind)
+            return np.zeros(self.len_ind(ind))
+        else:
+            _, max_val = self.amax(ind)
+            return max_val
 
     @abstractmethod
     def components(self, component_indices, ind=None):
@@ -375,7 +384,8 @@ class VectorArrayInterface(BasicInterface):
         Parameters
         ----------
         component_indices
-            Indices of the vector components that are to be returned.
+            List or Numpy 1d-array of indices of the vector components that are to
+            be returned.
         ind
             Indices of the vectors whose components to be calculated (see class documentation).
 
@@ -456,6 +466,23 @@ class VectorArrayInterface(BasicInterface):
                 isinstance(ind, list) and (len(ind) == 0 or 0 <= min(ind) and max(ind) < len(self)) or
                 isinstance(ind, np.ndarray) and ind.ndim == 1
                                             and (len(ind) == 0 or 0 <= np.min(ind) and np.max(ind) < len(self)))
+
+    def check_ind_unique(self, ind):
+        '''Check if `ind` is an admissable list of unique indices in the sense of the class documentation.'''
+        if (ind is None or isinstance(ind, Number) and 0 <= ind < len(self)):
+            return True
+        elif isinstance(ind, list):
+            if len(ind) == 0:
+                return True
+            s = set(ind)
+            return len(s) == len(ind) and 0 <= min(s) and max(s) < len(self)
+        elif isinstance(ind, np.ndarray) and ind.ndim == 1:
+            if len(ind) == 0:
+                return True
+            u = np.unique(ind)
+            return len(u) == len(ind) and 0 <= u[0] and u[-1] < len(self)
+        else:
+            return False
 
     def len_ind(self, ind):
         return len(self) if ind is None else 1 if isinstance(ind, Number) else len(ind)

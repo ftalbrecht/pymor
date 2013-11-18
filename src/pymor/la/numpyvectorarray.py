@@ -68,6 +68,7 @@ class NumpyVectorArray(VectorArrayInterface, Communicable):
 
     def append(self, other, o_ind=None, remove_from_other=False):
         assert other.check_ind(o_ind)
+        assert self.dim == other.dim
         assert other is not self or not remove_from_other
 
         if o_ind is None:
@@ -111,7 +112,7 @@ class NumpyVectorArray(VectorArrayInterface, Communicable):
             self._array = self._array.copy()
 
     def replace(self, other, ind=None, o_ind=None, remove_from_other=False):
-        assert self.check_ind(ind)
+        assert self.check_ind_unique(ind)
         assert other.check_ind(o_ind)
         assert self.dim == other.dim
         assert other is not self or not remove_from_other
@@ -121,7 +122,7 @@ class NumpyVectorArray(VectorArrayInterface, Communicable):
                 if other is self:
                     return
                 assert other._len == self._len
-                self._array = other._array[:other._len]
+                self._array = other._array[:other._len].copy()
             else:
                 if not hasattr(o_ind, '__len__'):
                     o_ind = [o_ind]
@@ -159,7 +160,8 @@ class NumpyVectorArray(VectorArrayInterface, Communicable):
         return R
 
     def scal(self, alpha, ind=None):
-        assert self.check_ind(ind)
+        assert self.check_ind_unique(ind)
+        assert isinstance(alpha, Number)
 
         if ind is None:
             self._array[:self._len] *= alpha
@@ -167,7 +169,7 @@ class NumpyVectorArray(VectorArrayInterface, Communicable):
             self._array[ind] *= alpha
 
     def axpy(self, alpha, x, ind=None, x_ind=None):
-        assert self.check_ind(ind)
+        assert self.check_ind_unique(ind)
         assert x.check_ind(x_ind)
         assert self.dim == x.dim
         assert self.len_ind(ind) == x.len_ind(x_ind)
@@ -245,18 +247,23 @@ class NumpyVectorArray(VectorArrayInterface, Communicable):
 
     def components(self, component_indices, ind=None):
         assert self.check_ind(ind)
-        assert isinstance(component_indices, list) \
-            or isinstance(component_indices, np.ndarray) and component_indices.ndim == 1
+        assert isinstance(component_indices, list) and (len(component_indices) == 0 or min(component_indices) >= 0) \
+            or (isinstance(component_indices, np.ndarray) and component_indices.ndim == 1
+                and (len(component_indices) == 0 or np.min(component_indices) >= 0))
 
         if ind is None:
             return self._array[:self._len, component_indices]
         else:
             if not hasattr(ind, '__len__'):
                 ind = [ind]
-            return self._array[ind, component_indices]
+            return self._array[:, component_indices][ind, :]
 
     def amax(self, ind=None):
+        assert self.dim > 0
         assert self.check_ind(ind)
+        if self._array.shape[1] == 0:
+            l = self.len_ind(ind)
+            return (np.ones(l) * -1, np.zeros(l))
 
         A = self._array[:self._len] if ind is None else \
                 self._array[ind] if hasattr(ind, '__len__') else self._array[ind:ind + 1]

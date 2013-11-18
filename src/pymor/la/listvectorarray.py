@@ -10,9 +10,8 @@ from numbers import Number
 
 import numpy as np
 
-from pymor.core.exceptions import CommunicationError
 from pymor.core.interfaces import BasicInterface, abstractmethod, abstractclassmethod, abstractproperty
-from pymor.la.interfaces import VectorArrayInterface
+from pymor.la.interfaces import VectorArrayInterface, Communicable
 from pymor.tools import float_cmp_all
 
 
@@ -61,8 +60,11 @@ class VectorInterface(BasicInterface):
         pass
 
     def sup_norm(self):
-        _, max_val = self.amax()
-        return max_val
+        if self.dim == 0:
+            return 0.
+        else:
+            _, max_val = self.amax()
+            return max_val
 
     @abstractmethod
     def components(self, component_indices):
@@ -116,6 +118,10 @@ class NumpyVector(VectorInterface):
             self._array = np.array(instance, dtype=dtype, copy=copy, order=order, subok=subok, ndmin=1)
         assert self._array.ndim == 1
 
+    @property
+    def data(self):
+        return self._array
+
     def zeros(cls, dim):
         return NumpyVector(np.zeros(dim))
 
@@ -155,8 +161,6 @@ class NumpyVector(VectorInterface):
         return np.sum(np.power(self._array, 2))**(1/2)
 
     def components(self, component_indices):
-        assert isinstance(component_indices, list) \
-            or isinstance(component_indices, np.ndarray) and component_indices.ndim == 1
         return self._array[component_indices]
 
     def amax(self):
@@ -248,7 +252,7 @@ class ListVectorArray(VectorArrayInterface):
             self._list = [thelist[i] for i in remaining]
 
     def replace(self, other, ind=None, o_ind=None, remove_from_other=False):
-        assert self.check_ind(ind)
+        assert self.check_ind_unique(ind)
         assert other.check_ind(o_ind)
         assert other.dim == self.dim
         assert other is not self or not remove_from_other
@@ -326,7 +330,8 @@ class ListVectorArray(VectorArrayInterface):
             return np.array([l[i].almost_equal(ol[oi], rtol=rtol, atol=atol) for i, oi in izip(ind, o_ind)])
 
     def scal(self, alpha, ind=None):
-        assert self.check_ind(ind)
+        assert self.check_ind_unique(ind)
+        assert isinstance(alpha, Number)
 
         if ind is None:
             for v in self._list:
@@ -339,10 +344,20 @@ class ListVectorArray(VectorArrayInterface):
                 l[i].scal(alpha)
 
     def axpy(self, alpha, x, ind=None, x_ind=None):
-        assert self.check_ind(ind)
+        assert self.check_ind_unique(ind)
         assert x.check_ind(x_ind)
         assert self.dim == x.dim
         assert self.len_ind(ind) == x.len_ind(x_ind)
+
+        if self is x:
+            if ind is None or x_ind is None:
+                self.axpy(alpha, x.copy(), ind, x_ind)
+                return
+            ind_set = {ind} if isinstance(ind, Number) else set(ind)
+            x_ind_set = {x_ind} if isinstance(x_ind, Number) else set(x_ind)
+            if ind_set.intersection(x_ind_set):
+                self.axpy(alpha, x.copy(x_ind), ind)
+                return
 
         if ind is None:
             Y = iter(self._list)
@@ -364,33 +379,16 @@ class ListVectorArray(VectorArrayInterface):
             X = (x._list[i] for i in x_ind)
             len_X = len(x_ind)
 
-        if alpha == 1:
-            if len_X == 1:
-                x = next(X)
-                for y in Y:
-                    y += x
-            else:
-                assert len_X == len_Y
-                for x, y in izip(X, Y):
-                    y += x
-        elif alpha == -1:
-            if len_X == 1:
-                x = next(X)
-                for y in Y:
-                    y -= x
-            else:
-                assert len_X == len_Y
-                for x, y in izip(X, Y):
-                    y -= x
+        if alpha == 0:
+            return
+        elif len_X == 1:
+            xx = next(X)
+            for y in Y:
+                y.axpy(alpha, xx)
         else:
-            if len_X == 1:
-                x = next(X) * alpha
-                for y in Y:
-                    y += x
-            else:
-                assert len_X == len_Y
-                for x, y in izip(X, Y):
-                    y += x * alpha
+            assert len_X == len_Y
+            for xx, y in izip(X, Y):
+                y.axpy(alpha, xx)
 
     def dot(self, other, pairwise, ind=None, o_ind=None):
         assert self.check_ind(ind)
@@ -460,7 +458,7 @@ class ListVectorArray(VectorArrayInterface):
         else:
             V = [self._list[i] for i in ind]
 
-        assert coefficients.shape[1] == len(self._list)
+        assert coefficients.shape[1] == self.len_ind(ind)
 
         RL = []
         for coeffs in coefficients:
@@ -491,23 +489,22 @@ class ListVectorArray(VectorArrayInterface):
 
         return np.array([self._list[i].l2_norm() for i in ind])
 
-    def sup_norm(self, ind=None):
-        assert self.check_ind(ind)
-
-        if ind is None:
-            ind = xrange(len(self._list))
-        elif isinstance(ind, Number):
-            ind = [ind]
-
-        return np.array([self._list[i].sup_norm() for i in ind])
-
     def components(self, component_indices, ind=None):
         assert self.check_ind(ind)
+        assert isinstance(component_indices, list) and (len(component_indices) == 0 or min(component_indices) >= 0) \
+            or (isinstance(component_indices, np.ndarray) and component_indices.ndim == 1
+                and (len(component_indices) == 0 or np.min(component_indices) >= 0))
 
         if ind is None:
             ind = xrange(len(self._list))
         elif isinstance(ind, Number):
             ind = [ind]
+
+        if len(ind) == 0:
+            assert len(component_indices) == 0 \
+                or isinstance(component_indices, list) and max(component_indices) < self.dim \
+                or isinstance(component_indices, np.ndarray) and np.max(component_indices) < self.dim
+            return np.empty((0, len(component_indices)))
 
         R = np.empty((len(ind), len(component_indices)))
         for k, i in enumerate(ind):
@@ -517,6 +514,7 @@ class ListVectorArray(VectorArrayInterface):
 
     def amax(self, ind=None):
         assert self.check_ind(ind)
+        assert self.dim > 0
 
         if ind is None:
             ind = xrange(len(self._list))
@@ -535,5 +533,14 @@ class ListVectorArray(VectorArrayInterface):
         return 'ListVectorArray of {} {}s of dimension {}'.format(len(self._list), str(self.vector_type), self._dim)
 
 
-class NumpyListVectorArray(ListVectorArray):
+class CommunicableListVectorArray(ListVectorArray, Communicable):
+
+    def _data(self):
+        if len(self._list) > 0:
+            return np.array([v.data for v in self._list])
+        else:
+            return np.empty((0, self._dim))
+
+
+class NumpyListVectorArray(CommunicableListVectorArray):
     vector_type = NumpyVector
