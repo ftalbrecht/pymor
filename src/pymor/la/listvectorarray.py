@@ -491,7 +491,9 @@ class ListVectorArray(VectorArrayInterface):
 
     def components(self, component_indices, ind=None):
         assert self.check_ind(ind)
-        assert isinstance(component_indices, list) and (len(component_indices) == 0 or min(component_indices) >= 0) \
+        assert (isinstance(component_indices, list)
+                and all([isinstance(num, Number) for num in component_indices])
+                and (len(component_indices) == 0 or min(component_indices) >= 0)) \
             or (isinstance(component_indices, np.ndarray) and component_indices.ndim == 1
                 and (len(component_indices) == 0 or np.min(component_indices) >= 0))
 
