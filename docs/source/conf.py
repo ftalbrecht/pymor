@@ -20,20 +20,25 @@ needs_sphinx = '1.0'
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 
 sys.path.insert(0, os.path.abspath('../../src'))
+sys.path.insert(0, os.path.abspath('.'))
 
 #generate autodoc
-from sphinx.apidoc import main as apidoc
-apidoc(argv=[sys.argv[0], '-o', 'generated/', '../../src/'])
+import gen_apidoc
+import pymor
+import pymortests
+import pymordemos
+gen_apidoc.walk(pymor)
+gen_apidoc.walk(pymortests)
+gen_apidoc.walk(pymordemos)
+
 
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.pngmath',
               'sphinx.ext.coverage',
               'sphinx.ext.autosummary',
               'sphinx.ext.viewcode',
-              'numpydoc'
+              'sphinx.ext.intersphinx',
+              'pymordocstring'
               ]
-
-# disables autosummary output
-numpydoc_show_class_members = False
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -220,4 +225,10 @@ coverage_c_path = []
 coverage_c_regexes = {}
 coverage_ignore_c_items = {}
 
-autodoc_default_flags = ['members', 'undoc-members', 'inherited-members', 'show-inheritance']
+# autodoc_default_flags = ['members', 'undoc-members', 'show-inheritance']
+
+intersphinx_mapping = {'python': ('http://docs.python.org/2.7', None),
+                       'numpy': ('http://docs.scipy.org/doc/numpy', None)}
+
+import substitutions
+rst_epilog = substitutions.substitutions

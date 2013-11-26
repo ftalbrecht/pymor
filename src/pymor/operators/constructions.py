@@ -5,13 +5,12 @@
 
 from __future__ import absolute_import, division, print_function
 
-from collections import OrderedDict
 from numbers import Number
 
 import numpy as np
 
 from pymor.la import VectorArrayInterface, NumpyVectorArray
-from pymor.operators.basic import OperatorBase, ProjectedOperator, ProjectedLinearOperator
+from pymor.operators.basic import OperatorBase
 from pymor.operators.interfaces import OperatorInterface
 from pymor.operators.block import BlockOperator
 
@@ -138,7 +137,7 @@ class VectorOperator(OperatorBase):
         count = len(U) if ind is None else 1 if isinstance(ind, Number) else len(ind)
         R = self._vector.copy(ind=([0] * count))
         for i, c in enumerate(U.data):
-            R.scal(c, ind=i)
+            R.scal(c[0], ind=i)
         return R
 
 

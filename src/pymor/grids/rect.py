@@ -134,13 +134,13 @@ class RectGrid(AffineGridInterface):
         self.__embeddings = (A, B)
 
     def __str__(self):
-        return ('Rect-Grid on domain [{xmin},{xmax}] x [{ymin},{ymax}]\n' +
+        return (('Rect-Grid on domain [{xmin},{xmax}] x [{ymin},{ymax}]\n' +
                 'x0-intervals: {x0ni}, x1-intervals: {x1ni}\n' +
-                'faces: {faces}, edges: {edges}, verticies: {verticies}').format(
-                    xmin=self.x0_range[0], xmax=self.x0_range[1],
-                    ymin=self.x1_range[0], ymax=self.x1_range[1],
-                    x0ni=self.x0_num_intervals, x1ni=self.x1_num_intervals,
-                    faces=self.size(0), edges=self.size(1), verticies=self.size(2))
+                'faces: {faces}, edges: {edges}, verticies: {verticies}')
+                .format(xmin=self.x0_range[0], xmax=self.x0_range[1],
+                        ymin=self.x1_range[0], ymax=self.x1_range[1],
+                        x0ni=self.x0_num_intervals, x1ni=self.x1_num_intervals,
+                        faces=self.size(0), edges=self.size(1), verticies=self.size(2)))
 
     def size(self, codim=0):
         assert 0 <= codim <= 2, CodimError('Invalid codimension')
@@ -186,9 +186,11 @@ class RectGrid(AffineGridInterface):
         return self._global_to_structured[codim]
 
     def vertex_coordinates(self, dim):
-        '''Returns an array of the x_dim koordinates of the grid verticies. I.e. ::
+        '''Returns an array of the x_dim koordinates of the grid verticies.
 
-            centers(2)[structured_to_global(2)[i, j]] == np.array([vertex_coordinates(0)[i], vertex_coordinates(1)[j]])
+        I.e. ::
+
+           centers(2)[structured_to_global(2)[i, j]] == np.array([vertex_coordinates(0)[i], vertex_coordinates(1)[j]])
         '''
         assert 0 <= dim < 2
         return np.linspace(self.domain[0, dim], self.domain[1, dim], self.num_intervals[dim] + 1)

@@ -1,28 +1,32 @@
-###############
+#########################################
 pyMOR - Model Order Reduction with python
-###############
+#########################################
 
-Demos
-*****
-
-see src/pymor/demos/*py
-
-
-The pyMOR packages
-****************
+The pyMOR package
+******************
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 3
     :glob:
     
-    generated/pymor.*
+    generated/pymor
     
+Demo Applications
+*****************
+
+.. toctree::
+    :maxdepth: 3
+    :glob:
+    
+    generated/pymordemos
+
+
   
-Automated tests with nose
-*************************
+Automated tests with pytest
+***************************
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 3
     :glob:
     
-    generated/pymortests.*    
+    generated/pymortests    

@@ -1,3 +1,15 @@
+# -*- coding: utf-8 -*-
+# This file is part of the pyMOR project (http://www.pymor.org).
+# Copyright Holders: Felix Albrecht, Rene Milk, Stephan Rave
+# License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
+
+'''
+This module contains backend implementations of pyMOR cache regions using
+the `dogpile <https://pypi.python.org/pypi/dogpile.cache>`_ package.
+
+Not to be used directly.
+'''
+
 from tempfile import gettempdir
 from collections import OrderedDict
 from pprint import pformat
@@ -5,7 +17,6 @@ import sys
 import os
 from os.path import join
 from collections import deque
-import uuid
 from dogpile import cache as dc
 from dogpile.cache.backends.file import DBMBackend
 
@@ -36,6 +47,7 @@ SMALL_DISK_CONFIG = {"backend": 'LimitedFile',
                      'arguments.max_keys': 20}
 
 NO_VALUE = dc.api.NO_VALUE
+
 
 class DummyBackend(BasicInterface, dc.api.CacheBackend):
 

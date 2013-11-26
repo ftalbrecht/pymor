@@ -11,10 +11,12 @@ warn = warnings.warn
 ContractNotRespected = contracts.ContractNotRespected
 ContractException = contracts.ContractException
 
+
 class CommunicationError(Exception):
-    '''Is raised when the `data` field of a `Communicable`
-    is accessed, but communication is disabled.
+    '''Is raised when the `data` field of an :class:`pymor.la.interfaces.Communicable`
+    instance is accessed, but communication is disabled.
     '''
+
 
 class ConstError(Exception):
     '''I get thrown when you try to add a new member to
@@ -29,7 +31,6 @@ class CodimError(Exception):
 
 class CallOrderWarning(UserWarning):
     '''I am raised when there's a preferred call order, but the user didn't follow it.
-    For an Example see pymor.discretizers.stationary.elliptic.cg
     '''
     pass
 
@@ -45,9 +46,11 @@ class ExtensionError(Exception):
     in the span of the basis.
     '''
 
+
 class ConfigError(Exception):
     '''Is raised if a there is any kind of problem with the keys or values in a configuration.
     '''
+
 
 class InversionError(Exception):
     '''Is raised if an operator inversion algorithm fails.'''

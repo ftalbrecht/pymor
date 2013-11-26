@@ -3,6 +3,7 @@
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
 
+# flake8: noqa
 from __future__ import absolute_import, division, print_function
 
 from numbers import Number
@@ -11,9 +12,8 @@ import IPython.parallel as p
 
 from pymor.discretizations import StationaryDiscretization
 from pymor.la import VectorArrayInterface, NumpyVectorArray
-from pymor.operators import OperatorInterface, LincombOperatorInterface
+from pymor.operators import OperatorInterface
 from pymor.operators.basic import LincombOperatorBase, ProjectedOperator, ProjectedLinearOperator
-from pymor.parameters.base import Parameter
 
 
 class RemoteRessourceManger(object):
@@ -458,7 +458,7 @@ class RemoteStationaryDiscretization(StationaryDiscretization):
     def with_(self, **kwargs):
         assert set(kwargs.keys()) <= self.with_arguments
         assert 'operators' not in kwargs or 'rhs' not in kwargs and 'operator' not in kwargs
-        assert 'operators' not in kwargs or set(kwargs['operators'].keys()) <= set(('operator', 'rhs'))
+        assert 'operators' not in kwargs or set(kwargs['operators'].keys()) <= {'operator', 'rhs'}
 
         if 'operators' in kwargs:
             kwargs.update(kwargs.pop('operators'))

@@ -5,11 +5,7 @@
 
 from __future__ import absolute_import, division, print_function
 
-import numpy as np
-
-from numbers import Number
-
-from pymor.core import ImmutableInterface, abstractmethod, abstractproperty, abstractstaticmethod
+from pymor.core import ImmutableInterface, abstractmethod, abstractstaticmethod
 from pymor.parameters import Parametric
 from pymor.tools import Named
 
@@ -32,8 +28,8 @@ class OperatorInterface(ImmutableInterface, Parametric, Named):
         is a type of inversion algorithm which can be used to invert the
         operator. `invert_options[k]` is a dict containing all options
         along with their default values which can be set for algorithm `k`.
-        We always have `invert_options[k]['type'] == k` such that
-        `invert_options[k]` can be passed directly to `apply_inverse()`.
+        We always have `invert_options[k]['type'] == k` such
+        that `invert_options[k]` can be passed directly to `apply_inverse()`.
     linear
         True if the operator is (known to be) linear.
     type_source

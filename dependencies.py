@@ -1,9 +1,9 @@
 tests_require = ['tox', 'pytest', 'pytest-cache', 'pytest-capturelog', 'pytest-instafail',
                  'pytest-xdist', 'pytest-cov', 'pytest-flakes', 'pytest-pep8']
 install_requires = ['Cython', 'numpy', 'scipy', 'PyContracts', 'Sphinx',
-                    'docopt', 'numpydoc', 'dogpile.cache']
+                    'docopt', 'dogpile.cache']
 pre_setup_requires = ['cython', 'numpy']
-setup_requires = pre_setup_requires + ['nose']
+setup_requires = pre_setup_requires
 install_suggests = ['ipython', 'ipdb', 'matplotlib', 'pyvtk', 'sympy', 'PyOpenGL', 'PySide', 'glumpy'] + tests_require
 
 import_names = {'ipython': 'IPython',

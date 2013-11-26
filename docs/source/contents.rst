@@ -1,6 +1,10 @@
+#################
+Table of Contents
+#################
+
 .. toctree::
     :maxdepth: 3
     
-    generated/modules
+    index
     
     

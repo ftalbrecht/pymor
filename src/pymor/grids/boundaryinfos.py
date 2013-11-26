@@ -17,7 +17,7 @@ class EmptyBoundaryInfo(BoundaryInfoInterface):
     def __init__(self, grid):
         super(EmptyBoundaryInfo, self).__init__()
         self.grid = grid
-        self.boundary_types = set()
+        self.boundary_types = frozenset()
 
     def mask(self, boundary_type, codim):
         assert False, ValueError('Has no boundary_type "{}"'.format(boundary_type))
@@ -59,7 +59,7 @@ class AllDirichletBoundaryInfo(BoundaryInfoInterface):
     def __init__(self, grid):
         super(AllDirichletBoundaryInfo, self).__init__()
         self.grid = grid
-        self.boundary_types = set((BoundaryType('dirichlet'),))
+        self.boundary_types = frozenset({BoundaryType('dirichlet')})
 
     def mask(self, boundary_type, codim):
         assert boundary_type == BoundaryType('dirichlet'), ValueError('Has no boundary_type "{}"'.format(boundary_type))
@@ -70,7 +70,7 @@ class AllDirichletBoundaryInfo(BoundaryInfoInterface):
 class SubGridBoundaryInfo(BoundaryInfoInterface):
 
     def __init__(self, subgrid, grid, grid_boundary_info, new_boundary_type=None, assert_unique_type=False):
-        assert new_boundary_type is None or isinstance(new_boundaries_type, BoundaryType)
+        assert new_boundary_type is None or isinstance(new_boundary_type, BoundaryType)
 
         super(SubGridBoundaryInfo, self).__init__()
         boundary_types = grid_boundary_info.boundary_types
@@ -92,9 +92,9 @@ class SubGridBoundaryInfo(BoundaryInfoInterface):
             masks.append(m)
         self.__masks = masks
 
-        self.boundary_types = set(grid_boundary_info.boundary_types)
+        self.boundary_types = grid_boundary_info.boundary_types
         if has_new_boundaries and new_boundary_type is not None:
-            self.boundary_types.add(new_boundary_type)
+            self.boundary_types = self.boundary_types.union({new_boundary_type})
 
         self.check_boundary_types(assert_unique_type=assert_unique_type)
 
