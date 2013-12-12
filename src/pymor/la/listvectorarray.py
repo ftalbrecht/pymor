@@ -11,16 +11,16 @@ from numbers import Number
 import numpy as np
 
 from pymor.core.interfaces import BasicInterface, abstractmethod, abstractclassmethod, abstractproperty
-from pymor.la.interfaces import VectorArrayInterface, Communicable
+from pymor.la.interfaces import VectorArrayInterface
 from pymor.tools import float_cmp_all
 
 
 class VectorInterface(BasicInterface):
     '''Interface for vectors.
 
-    This Interface is mainly inteded to be used in conjunction with ListVectorArray. In general, all
-    pyMOR ojects operate on VectorArrays instead of single vectors! All methods of the interface have
-    a direct counterpart in VectorArrayInterface.
+    This Interface is mainly inteded to be used in conjunction with |ListVectorArray|. In general, all
+    pyMOR ojects operate on |VectorArrays| instead of single vectors! All methods of the interface have
+    a direct counterpart in the |VectorArray| interface.
     '''
 
     @abstractclassmethod
@@ -110,6 +110,7 @@ class VectorInterface(BasicInterface):
 
 
 class NumpyVector(VectorInterface):
+    '''Vector stored in a NumPy 1D-array.'''
 
     def __init__(self, instance, dtype=None, copy=False, order=None, subok=False):
         if isinstance(instance, np.ndarray) and not copy:
@@ -171,8 +172,17 @@ class NumpyVector(VectorInterface):
 
 
 class ListVectorArray(VectorArrayInterface):
+    '''|VectorArray| implementation via a python list of vectors.
 
-    vector_type = None
+    In order to create a |ListVectorArray|, derive from this
+    class and define the `vector_type` class attribute.
+
+    Attributes
+    ----------
+    vector_type
+        The type of of :class:`Vectors <VectorInterface>` to store.
+        Each vector has to be of the same type.
+    '''
 
     def __init__(self, vectors, dim=None, copy=True):
         assert dim is None or dim >= 0
@@ -201,6 +211,15 @@ class ListVectorArray(VectorArrayInterface):
 
     def __len__(self):
         return len(self._list)
+
+    @property
+    def data(self):
+        if not hasattr(self.vector_type, 'data'):
+            raise TypeError('{} does not have a data attribute'.format(self.vector_type))
+        if len(self._list) > 0:
+            return np.array([v.data for v in self._list])
+        else:
+            return np.empty((0, self._dim))
 
     @property
     def dim(self):
@@ -535,14 +554,5 @@ class ListVectorArray(VectorArrayInterface):
         return 'ListVectorArray of {} {}s of dimension {}'.format(len(self._list), str(self.vector_type), self._dim)
 
 
-class CommunicableListVectorArray(ListVectorArray, Communicable):
-
-    def _data(self):
-        if len(self._list) > 0:
-            return np.array([v.data for v in self._list])
-        else:
-            return np.empty((0, self._dim))
-
-
-class NumpyListVectorArray(CommunicableListVectorArray):
+class NumpyListVectorArray(ListVectorArray):
     vector_type = NumpyVector

@@ -6,15 +6,14 @@ from __future__ import absolute_import, division, print_function
 
 import numpy as np
 
-from pymor.core.exceptions import CodimError
 from pymor.grids.interfaces import AffineGridInterface
 from pymor.grids.referenceelements import triangle
 
 
 class TriaGrid(AffineGridInterface):
-    '''Ad-hoc implementation of a rectangular grid.
+    '''Basic implementation of a triangular grid on a rectangular domain.
 
-    The global face, edge and vertex indices are given as follows
+    The global face, edge and vertex indices are given as follows ::
 
                  6---10----7---11----8
                  | \     6 | \     7 |
@@ -29,9 +28,9 @@ class TriaGrid(AffineGridInterface):
     Parameters
     ----------
     num_intervals
-        Tuple (n0, n1) determining a grid with n0 x n1 codim-0 entities.
+        Tuple `(n0, n1)` determining a grid with `n0` x `n1` codim-0 entities.
     domain
-        Tuple (ll, ur) where ll defines the lower left and ur the upper right
+        Tuple `(ll, ur)` where `ll` defines the lower left and `ur` the upper right
         corner of the domain.
     '''
 
@@ -40,7 +39,6 @@ class TriaGrid(AffineGridInterface):
     reference_element = triangle
 
     def __init__(self, num_intervals=(2, 2), domain=[[0, 0], [1, 1]]):
-        super(TriaGrid, self).__init__()
         self.num_intervals = num_intervals
         self.domain = np.array(domain)
 
@@ -106,14 +104,12 @@ class TriaGrid(AffineGridInterface):
                         faces=self.size(0), edges=self.size(1), verticies=self.size(2)))
 
     def size(self, codim=0):
-        assert 0 <= codim <= 2, CodimError('Invalid codimension')
+        assert 0 <= codim <= 2, 'Invalid codimension'
         return self.__sizes[codim]
 
-    def subentities(self, codim=0, subentity_codim=None):
-        assert 0 <= codim <= 2, CodimError('Invalid codimension')
-        if subentity_codim is None:
-            subentity_codim = codim + 1
-        assert codim <= subentity_codim <= 2, CodimError('Invalid subentity codimension')
+    def subentities(self, codim, subentity_codim):
+        assert 0 <= codim <= 2, 'Invalid codimension'
+        assert codim <= subentity_codim <= 2, 'Invalid subentity codimension'
         if codim == 0:
             if subentity_codim == 0:
                 return np.arange(self.size(0), dtype='int32')[:, np.newaxis]

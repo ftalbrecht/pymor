@@ -11,33 +11,31 @@ from pymor.grids.interfaces import BoundaryInfoInterface
 
 
 class EmptyBoundaryInfo(BoundaryInfoInterface):
-    '''`BoundaryInfo` without any `BoundaryTypes`.
+    '''|BoundaryInfo| with no |BoundaryTypes| attached to any boundary.
     '''
 
     def __init__(self, grid):
-        super(EmptyBoundaryInfo, self).__init__()
         self.grid = grid
         self.boundary_types = frozenset()
 
     def mask(self, boundary_type, codim):
-        assert False, ValueError('Has no boundary_type "{}"'.format(boundary_type))
+        assert False, 'Has no boundary_type "{}"'.format(boundary_type)
 
 
 class BoundaryInfoFromIndicators(BoundaryInfoInterface):
-    '''`BoundaryInfo` where the `BoundaryTypes` are determined by indicator functions.
+    '''|BoundaryInfo| where the |BoundaryTypes| are determined by indicator functions.
 
     Parameters
     ----------
     grid
-        The grid to which the `BoundaryInfo` is associated.
+        The grid to which the |BoundaryInfo| is associated.
     indicators
-        dict where each key is a `BoundaryType` and the corresponding value is a boolean
+        Dict where each key is a |BoundaryType| and the corresponding value is a boolean
         valued function on the analytical domain indicating if a point belongs to a boundary
-        of the `BoundaryType`. (The indicator functions must be vectorized.)
+        of the |BoundaryType|. (The indicator functions must be vectorized.)
     '''
 
     def __init__(self, grid, indicators, assert_unique_type=[1], assert_some_type=[]):
-        super(BoundaryInfoFromIndicators, self).__init__()
         self.grid = grid
         self.boundary_types = indicators.keys()
         self._masks = {boundary_type: [np.zeros(grid.size(codim), dtype='bool') for codim in xrange(1, grid.dim + 1)]
@@ -53,26 +51,37 @@ class BoundaryInfoFromIndicators(BoundaryInfoInterface):
 
 
 class AllDirichletBoundaryInfo(BoundaryInfoInterface):
-    '''`BoundaryInfo` where each boundray entity has `BoundaryType('dirichlet')`.
-    '''
+    '''|BoundaryInfo| where `BoundaryType('dirichlet')` is attached to each boundary entity.'''
 
     def __init__(self, grid):
-        super(AllDirichletBoundaryInfo, self).__init__()
         self.grid = grid
         self.boundary_types = frozenset({BoundaryType('dirichlet')})
 
     def mask(self, boundary_type, codim):
-        assert boundary_type == BoundaryType('dirichlet'), ValueError('Has no boundary_type "{}"'.format(boundary_type))
+        assert boundary_type == BoundaryType('dirichlet'), 'Has no boundary_type "{}"'.format(boundary_type)
         assert 1 <= codim <= self.grid.dim
         return np.ones(self.grid.size(codim), dtype='bool') * self.grid.boundary_mask(codim)
 
 
 class SubGridBoundaryInfo(BoundaryInfoInterface):
+    '''Derives a |BoundaryInfo| for a :class:`~pymor.grids.subgrid.SubGrid`.
 
-    def __init__(self, subgrid, grid, grid_boundary_info, new_boundary_type=None, assert_unique_type=False):
+    Parameters
+    ----------
+    subrid
+        The :class:`~pymor.grids.subgrid.SubGrid` for which a |BoundaryInfo| is created.
+    grid
+        The parent |Grid|.
+    grid_boundary_info
+        The |BoundaryInfo| of the parent |Grid| from which to derive the |BoundaryInfo|
+    new_boundary_type
+        The |BoundaryType| which is assigned to the new boundaries of `subgrid`. If
+        `None`, no |BoundaryType| is assigned.
+    '''
+
+    def __init__(self, subgrid, grid, grid_boundary_info, new_boundary_type=None):
         assert new_boundary_type is None or isinstance(new_boundary_type, BoundaryType)
 
-        super(SubGridBoundaryInfo, self).__init__()
         boundary_types = grid_boundary_info.boundary_types
         has_new_boundaries = False
         masks = []
@@ -95,8 +104,6 @@ class SubGridBoundaryInfo(BoundaryInfoInterface):
         self.boundary_types = grid_boundary_info.boundary_types
         if has_new_boundaries and new_boundary_type is not None:
             self.boundary_types = self.boundary_types.union({new_boundary_type})
-
-        self.check_boundary_types(assert_unique_type=assert_unique_type)
 
     def mask(self, boundary_type, codim):
         assert 1 <= codim < len(self.__masks) + 1, 'Invalid codimension'

@@ -9,8 +9,11 @@
 interfaces = '''
 
 .. |AffineGrid| replace:: :class:`AffineGrid <pymor.grids.interfaces.AffineGridInterface>`
+.. |AffineGrids| replace:: :class:`AffineGrids <pymor.grids.interfaces.AffineGridInterface>`
+.. |Grid| replace:: :class:`Grid <pymor.grids.interfaces.AffineGridInterface>`
 .. |BoundaryInfo| replace:: :class:`BoundaryInfo <pymor.grids.interfaces.BoundaryInfoInterface>`
-.. |ConformalTopologicalGrid| replace:: :class:`ConformalTopologicalGrid <pymor.grids.interfaces.ConformalTopologicalGrid>`
+.. |ConformalTopologicalGrid| replace:: :class:`ConformalTopologicalGrid <pymor.grids.interfaces.ConformalTopologicalGridInterface>`
+.. |ConformalTopologicalGrids| replace:: :class:`ConformalTopologicalGrids <pymor.grids.interfaces.ConformalTopologicalGridInterface>`
 .. |Discretization| replace:: :class:`Discretization <pymor.discretizations.interfaces.DiscretizationInterface>`
 .. |Discretizations| replace:: :class:`Discretizations <pymor.discretizations.interfaces.DiscretizationInterface>`
 .. |DomainDescription| replace:: :class:`DomainDescription <pymor.domaindescriptions.interfaces.DomainDescriptionInterface>`
@@ -18,6 +21,7 @@ interfaces = '''
 .. |Function| replace:: :class:`Function <pymor.functions.interfaces.FunctionInterface>`
 .. |Functions| replace:: :class:`Functions <pymor.functions.interfaces.FunctionInterface>`
 .. |LincombOperator| replace:: :class:`LincombOperator <pymor.operators.interfaces.LincombOperatorInterface>`
+.. |LincombOperators| replace:: :class:`LincombOperators <pymor.operators.interfaces.LincombOperatorInterface>`
 .. |Operator| replace:: :class:`Operator <pymor.operators.interfaces.OperatorInterface>`
 .. |Operators| replace:: :class:`Operators <pymor.operators.interfaces.OperatorInterface>`
 .. |Functional| replace:: :class:`Functional <pymor.operators.interfaces.OperatorInterface>`
@@ -26,6 +30,7 @@ interfaces = '''
 .. |ParameterFunctionals| replace:: :class:`ParameterFunctionals <pymor.parameters.interfaces.ParameterFunctionalInterface>`
 .. |ParameterSpace| replace:: :class:`ParameterSpace <pymor.parameters.interfaces.ParameterSpaceInterface>`
 .. |ReferenceElement| replace:: :class:`ReferenceElement <pymor.grids.interfaces.ReferenceElementInterface>`
+.. |ReferenceElements| replace:: :class:`ReferenceElements <pymor.grids.interfaces.ReferenceElementInterface>`
 .. |VectorArray| replace:: :class:`VectorArray <pymor.la.interfaces.VectorArrayInterface>`
 .. |VectorArrays| replace:: :class:`VectorArrays <pymor.la.interfaces.VectorArrayInterface>`
 
@@ -33,8 +38,8 @@ interfaces = '''
 
 # substitutions for the most important classes and methods in pyMOR
 common = '''
-.. |defaults| replace:: :attr:`~pymor.defaults.defaults`
-.. |default| replace:: :attr:`default <pymor.defaults.defaults>`
+.. |defaults| replace:: :class:`defaults <pymor.defaults.Defaults>`
+.. |default| replace:: :class:`default <pymor.defaults.Defaults>`
 
 .. |CacheRegion| replace:: :class:`~pymor.core.cache.CacheRegion`
 
@@ -55,9 +60,14 @@ common = '''
 .. |TriaGrid| replace:: :class:`~pymor.grids.tria.TriaGrid`
 
 .. |NumpyVectorArray| replace:: :class:`~pymor.la.numpyvectorarray.NumpyVectorArray`
+.. |NumpyVectorArrays| replace:: :class:`NumpyVectorArrays <pymor.la.numpyvectorarray.NumpyVectorArray>`
 .. |ListVectorArray| replace:: :class:`~pymor.la.listvectorarray.ListVectorArray`
 
+.. |OperatorBase| replace:: :class:`~pymor.operators.basic.OperatorBase`
 .. |NumpyMatrixOperator| replace:: :class:`~pymor.operators.basic.NumpyMatrixOperator`
+.. |NumpyMatrixBasedOperator| replace:: :class:`~pymor.operators.basic.NumpyMatrixBasedOperator`
+.. |NumpyMatrixBasedOperators| replace:: :class:`NumpyMatrixBasedOperators <pymor.operators.basic.NumpyMatrixBasedOperator>`
+.. |NumpyGenericOperator| replace:: :class:`~pymor.operators.basic.NumpyGenericOperator`
 .. |EmpiricalInterpolatedOperator| replace:: :class:`~pymor.operators.ei.EmpiricalInterpolatedOperator`
 .. |EmpiricalInterpolatedOperators| replace:: :class:`EmpiricalInterpolatedOperators <pymor.operators.ei.EmpiricalInterpolatedOperator>`
 .. |Concatenation| replace:: :class:`~pymor.operators.constructions.Concatenation`
@@ -72,12 +82,15 @@ common = '''
 
 .. |reduce_generic_rb| replace:: :func:`~pymor.reductors.basic.reduce_generic_rb`
 
+.. |NumPy| replace:: :mod:`NumPy <numpy>`
 .. |NumPy array| replace:: :class:`NumPy array <numpy.ndarray>`
 .. |NumPy arrays| replace:: :class:`NumPy arrays <numpy.ndarray>`
 .. |Numpy array| replace:: :class:`NumPy array <numpy.ndarray>`
 .. |Numpy arrays| replace:: :class:`NumPy arrays <numpy.ndarray>`
 .. |array| replace:: :class:`NumPy array <numpy.ndarray>`
 .. |Array| replace:: :class:`NumPy array <numpy.ndarray>`
+
+.. |OrderedDict| replace:: :class:`~collections.OrderedDict`
 
 '''
 

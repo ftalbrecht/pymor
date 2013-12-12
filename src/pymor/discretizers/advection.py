@@ -11,7 +11,7 @@ from pymor.analyticalproblems.advection import InstationaryAdvectionProblem
 from pymor.core import inject_sid
 from pymor.discretizations import InstationaryDiscretization
 from pymor.domaindiscretizers import discretize_domain_default
-from pymor.gui.qt import GlumpyPatchVisualizer, Matplotlib1DVisualizer
+from pymor.gui.qt import PatchVisualizer, Matplotlib1DVisualizer
 from pymor.la import NumpyVectorArray
 from pymor.operators.fv import (nonlinear_advection_lax_friedrichs_operator,
                                 nonlinear_advection_engquist_osher_operator,
@@ -56,7 +56,7 @@ def discretize_nonlinear_instationary_advection_fv(analytical_problem, diameter=
         If further arguments should be passed to the discretizer, use
         :func:`functools.partial`. If `None`, |discretize_domain_default| is used.
     grid
-        Instead of using a domain discretizer, the grid can also be passed directly
+        Instead of using a domain discretizer, the |Grid| can also be passed directly
         using this parameter.
     boundary_info
         A |BoundaryInfo| specifying the boundary types of the grid boundary entities.
@@ -69,7 +69,7 @@ def discretize_nonlinear_instationary_advection_fv(analytical_problem, diameter=
     data
         Dictionary with the following entries:
 
-            :grid:           The generated grid.
+            :grid:           The generated |Grid|.
             :boundary_info:  The generated |BoundaryInfo|.
 
 
@@ -110,7 +110,7 @@ def discretize_nonlinear_instationary_advection_fv(analytical_problem, diameter=
 
     products = {'l2': L2Product(grid, boundary_info)}
     if grid.dim == 2:
-        visualizer = GlumpyPatchVisualizer(grid=grid, bounding_box=grid.domain, codim=0)
+        visualizer = PatchVisualizer(grid=grid, bounding_box=grid.domain, codim=0)
     elif grid.dim == 1:
         visualizer = Matplotlib1DVisualizer(grid, codim=0)
     else:

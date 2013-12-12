@@ -7,18 +7,17 @@ from __future__ import print_function
 from __future__ import division
 import numpy as np
 
-from pymor.core.exceptions import CodimError
 from pymor.grids.interfaces import AffineGridInterface
 from pymor.grids.referenceelements import line
 
 
 class OnedGrid(AffineGridInterface):
-    '''One-dimensional grid on an interval.
+    '''One-dimensional |Grid| on an interval.
 
     Parameters
     ----------
     domain
-        Tuple (left, right) containing the left and right boundary of the domain.
+        Tuple `(left, right)` containing the left and right boundary of the domain.
     num_intervals
         The number of codim-0 entities.
     '''
@@ -28,7 +27,6 @@ class OnedGrid(AffineGridInterface):
     reference_element = line
 
     def __init__(self, domain=(0, 1), num_intervals=4, identify_left_right=False):
-        super(OnedGrid, self).__init__()
         self.reference_element = line
         self._domain = np.array(domain)
         self._num_intervals = num_intervals
@@ -54,11 +52,9 @@ class OnedGrid(AffineGridInterface):
         assert 0 <= codim <= 1, 'codim has to be between 0 and {}!'.format(self.dim)
         return self._sizes[codim]
 
-    def subentities(self, codim=0, subentity_codim=None):
-        assert 0 <= codim <= 1, CodimError('Invalid codimension')
-        if subentity_codim is None:
-            subentity_codim = codim + 1
-        assert codim <= subentity_codim <= self.dim, CodimError('Invalid subentity codimensoin')
+    def subentities(self, codim, subentity_codim):
+        assert 0 <= codim <= 1, 'Invalid codimension'
+        assert codim <= subentity_codim <= self.dim, 'Invalid subentity codimension'
         if codim == 0:
             if subentity_codim == 0:
                 return np.arange(self.size(0), dtype='int32')[:, np.newaxis]
@@ -67,7 +63,7 @@ class OnedGrid(AffineGridInterface):
         else:
             return super(OnedGrid, self).subentities(codim, subentity_codim)
 
-    def embeddings(self, codim=0):
+    def embeddings(self, codim):
         if codim == 0:
             return self.__A, self.__B
         else:

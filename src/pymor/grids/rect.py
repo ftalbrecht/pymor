@@ -6,15 +6,14 @@ from __future__ import absolute_import, division, print_function
 
 import numpy as np
 
-from pymor.core.exceptions import CodimError
 from pymor.grids.interfaces import AffineGridInterface
 from pymor.grids.referenceelements import square
 
 
 class RectGrid(AffineGridInterface):
-    '''Ad-hoc implementation of a rectangular grid.
+    '''Basic implementation of a rectangular |Grid| on a rectangular domain.
 
-    The global face, edge and vertex indices are given as follows
+    The global face, edge and vertex indices are given as follows ::
 
                  x1
                  ^
@@ -33,9 +32,9 @@ class RectGrid(AffineGridInterface):
     Parameters
     ----------
     num_intervals
-        Tuple (n0, n1) determining a grid with n0 x n1 codim-0 entities.
+        Tuple `(n0, n1)` determining a grid with `n0` x `n1` codim-0 entities.
     domain
-        Tuple (ll, ur) where ll defines the lower left and ur the upper right
+        Tuple `(ll, ur)` where `ll` defines the lower left and `ur` the upper right
         corner of the domain.
     '''
 
@@ -49,7 +48,6 @@ class RectGrid(AffineGridInterface):
             assert num_intervals[0] > 1
         if identify_bottom_top:
             assert num_intervals[1] > 1
-        super(RectGrid, self).__init__()
         self.num_intervals = num_intervals
         self.domain = np.array(domain)
 
@@ -143,14 +141,12 @@ class RectGrid(AffineGridInterface):
                         faces=self.size(0), edges=self.size(1), verticies=self.size(2)))
 
     def size(self, codim=0):
-        assert 0 <= codim <= 2, CodimError('Invalid codimension')
+        assert 0 <= codim <= 2, 'Invalid codimension'
         return self.__sizes[codim]
 
-    def subentities(self, codim=0, subentity_codim=None):
-        assert 0 <= codim <= 2, CodimError('Invalid codimension')
-        if subentity_codim is None:
-            subentity_codim = codim + 1
-        assert codim <= subentity_codim <= self.dim, CodimError('Invalid subentity codimensoin')
+    def subentities(self, codim, subentity_codim):
+        assert 0 <= codim <= 2, 'Invalid codimension'
+        assert codim <= subentity_codim <= self.dim, 'Invalid subentity codimensoin'
         if codim == 0:
             if subentity_codim == 0:
                 return np.arange(self.size(0), dtype='int32')[:, np.newaxis]
@@ -195,24 +191,8 @@ class RectGrid(AffineGridInterface):
         assert 0 <= dim < 2
         return np.linspace(self.domain[0, dim], self.domain[1, dim], self.num_intervals[dim] + 1)
 
-    def visualize(self, dofs):
-        import matplotlib.pyplot as plt
-        import matplotlib.cm as cm
-        assert dofs.size == self.size(0), ValueError('DOF-vector has the wrong size')
-        im = plt.imshow(dofs.reshape((self.x1_num_intervals, self.x0_num_intervals)), cmap=cm.jet,
-                        aspect=self.x1_diameter / self.x0_diameter, extent=self.domain.T.ravel(),
-                        interpolation='none')
-
-        # make sure, the colorbar has the right height: (from mpl documentation)
-        from mpl_toolkits.axes_grid1 import make_axes_locatable
-        divider = make_axes_locatable(plt.gca())
-        cax = divider.append_axes("right", "5%", pad="3%")
-        plt.colorbar(im, cax=cax)
-        plt.show()
-
     @staticmethod
     def test_instances():
-        '''Used for unit testing.'''
         return [RectGrid((2, 4)),  RectGrid((1, 1)), RectGrid((42, 42)),
                 RectGrid((2, 4), identify_left_right=True),
                 RectGrid((2, 4), identify_bottom_top=True),

@@ -3,6 +3,8 @@
 # Copyright Holders: Felix Albrecht, Rene Milk, Stephan Rave
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
+''' This module provides some operators for continuous finite elements discretizations.'''
+
 from __future__ import absolute_import, division, print_function
 
 import numpy as np
@@ -13,12 +15,11 @@ from pymor.operators import NumpyMatrixBasedOperator, NumpyMatrixOperator
 
 
 class L2ProductFunctionalP1(NumpyMatrixBasedOperator):
-    '''Scalar product with an L2-function for linear finite elements.
+    '''|Functional| representing the scalar product with an L2-|Function| for linear finite elements.
 
-    It is moreover possible to specify a `BoundaryInfo` and a Dirichlet data function
-    such that boundary DOFs are evaluated to the corresponding dirichlet values.
-    This is useful for imposing boundary conditions on the solution.
-    The integral is caculated by an order two Gauss quadrature.
+    Boundary treatment can be performed by providng `boundary_info` and `dirichlet_data`,
+    in which case the DOFs corresponding to Dirichlet boundaries are set to the values
+    provided by `dirichlet_data`.
 
     The current implementation works in one and two dimensions, but can be trivially
     extended to arbitrary dimensions.
@@ -26,30 +27,33 @@ class L2ProductFunctionalP1(NumpyMatrixBasedOperator):
     Parameters
     ----------
     grid
-        Grid over which to assemble the functional.
+        |Grid| over which to assemble the functional.
     function
-        The `Function` with which to take the scalar product.
+        The |Function| with which to take the scalar product.
     boundary_info
-        `BoundaryInfo` determining the Dirichlet boundaries or None.
+        |BoundaryInfo| determining the Dirichlet boundaries or `None`.
+        If `None`, no boundary treatment is performed.
     dirichlet_data
-        The `Function` providing the Dirichlet boundary values. If None, zero boundary
-        is assumed.
+        |Function| providing the Dirichlet boundary values. If `None`,
+        constant-zero boundary is assumed.
+    order
+        Order of the Gauss quadrature to use for numerical integration.
     name
         The name of the functional.
     '''
 
     sparse = False
 
-    def __init__(self, grid, function, boundary_info=None, dirichlet_data=None, name=None):
+    def __init__(self, grid, function, boundary_info=None, dirichlet_data=None, order=2, name=None):
         assert grid.reference_element(0) in {line, triangle}
         assert function.shape_range == tuple()
-        super(L2ProductFunctionalP1, self).__init__()
         self.dim_source = grid.size(grid.dim)
         self.dim_range = 1
         self.grid = grid
         self.boundary_info = boundary_info
         self.function = function
         self.dirichlet_data = dirichlet_data
+        self.order = order
         self.name = name
         self.build_parameter_type(inherits=(function, dirichlet_data))
 
@@ -59,11 +63,11 @@ class L2ProductFunctionalP1(NumpyMatrixBasedOperator):
         bi = self.boundary_info
 
         # evaluate function at all quadrature points -> shape = (g.size(0), number of quadrature points)
-        F = self.function(g.quadrature_points(0, order=2), mu=mu)
+        F = self.function(g.quadrature_points(0, order=self.order), mu=mu)
 
         # evaluate the shape functions at the quadrature points on the reference
         # element -> shape = (number of shape functions, number of quadrature points)
-        q, w = g.reference_element.quadrature(order=2)
+        q, w = g.reference_element.quadrature(order=self.order)
         if g.dim == 1:
             SF = np.squeeze(np.array((1 - q, q)))
         elif g.dim == 2:
@@ -94,9 +98,10 @@ class L2ProductFunctionalP1(NumpyMatrixBasedOperator):
 
 
 class L2ProductP1(NumpyMatrixBasedOperator):
-    '''Operator representing the L2-product for linear finite functions.
+    '''|Operator| representing the L2-product between linear finite element functions.
 
-    To evaluate the product use the apply2 method.
+    To evaluate the product use the :meth:`~pymor.operators.interfaces module.OperatorInterface.apply2`
+    method.
 
     The current implementation works in one and two dimensions, but can be trivially
     extended to arbitrary dimensions.
@@ -104,19 +109,19 @@ class L2ProductP1(NumpyMatrixBasedOperator):
     Parameters
     ----------
     grid
-        The grid on which to assemble the product.
+        The |Grid| over which to assemble the product.
     boundary_info
-        BoundaryInfo associating boundary types to boundary entities.
+        |BoundaryInfo| for the treatment of Dirichlet boundary conditions.
     dirichlet_clear_rows
-        If True, set rows of the system matrix corresponding to Dirichlet boundary
+        If `True`, set the rows of the system matrix corresponding to Dirichlet boundary
         DOFs to zero. (Useful when used as mass matrix in time-stepping schemes.)
     dirichlet_clear_columns
-        If True, set columns of the system matrix corresponding to Dirichlet boundary
+        If `True`, set columns of the system matrix corresponding to Dirichlet boundary
         DOFs to zero (to obtain a symmetric matrix).
     dirichlet_clear_diag
-        If True, also set diagonal entries corresponding to Dirichlet boundary DOFs to
-        zero (e.g. for affine decomposition). Otherwise, if either dirichlet_clear_rows or
-        dirichlet_clear_columns is true, they are set to one.
+        If `True`, also set diagonal entries corresponding to Dirichlet boundary DOFs to
+        zero (e.g. for affine decomposition). Otherwise, if either `dirichlet_clear_rows` or
+        `dirichlet_clear_columns` is `True`, the diagonal entries are set to one.
     name
         The name of the product.
     '''
@@ -126,7 +131,6 @@ class L2ProductP1(NumpyMatrixBasedOperator):
     def __init__(self, grid, boundary_info, dirichlet_clear_rows=True, dirichlet_clear_columns=False,
                  dirichlet_clear_diag=False, name=None):
         assert grid.reference_element in (line, triangle)
-        super(L2ProductP1, self).__init__()
         self.dim_source = grid.size(grid.dim)
         self.dim_range = self.dim_source
         self.grid = grid
@@ -184,7 +188,7 @@ class L2ProductP1(NumpyMatrixBasedOperator):
 
 
 class DiffusionOperatorP1(NumpyMatrixBasedOperator):
-    '''Diffusion operator for linear finite elements.
+    '''Diffusion |Operator| for linear finite elements.
 
     The operator is of the form ::
 
@@ -196,19 +200,19 @@ class DiffusionOperatorP1(NumpyMatrixBasedOperator):
     Parameters
     ----------
     grid
-        The grid on which to assemble the operator.
+        The |Grid| over which to assemble the operator.
     boundary_info
-        BoundaryInfo associating boundary types to boundary entities.
+        |BoundaryInfo| for the treatment of Dirichlet boundary conditions.
     diffusion_function
-        The `Function` d(x).
+        The |Function| `d(x)`. If `None`, constant one is assumed.
     diffusion_constant
-        The constant c.
+        The constant `c`. If `None`, `c` is set to one.
     dirichlet_clear_columns
-        If True, set columns of the system matrix corresponding to Dirichlet boundary
+        If `True`, set columns of the system matrix corresponding to Dirichlet boundary
         DOFs to zero to obtain a symmetric system matrix. Otherwise, only the rows will
         be set to zero.
     dirichlet_clear_diag
-        If True, also set diagonal entries corresponding to Dirichlet boundary DOFs to
+        If `True`, also set diagonal entries corresponding to Dirichlet boundary DOFs to
         zero (e.g. for affine decomposition). Otherwise they are set to one.
     name
         Name of the operator.
@@ -218,8 +222,7 @@ class DiffusionOperatorP1(NumpyMatrixBasedOperator):
 
     def __init__(self, grid, boundary_info, diffusion_function=None, diffusion_constant=None,
                  dirichlet_clear_columns=False, dirichlet_clear_diag=False, name=None):
-        assert grid.reference_element(0) in {triangle, line}, ValueError('A simplicial grid is expected!')
-        super(DiffusionOperatorP1, self).__init__()
+        assert grid.reference_element(0) in {triangle, line}, 'A simplicial grid is expected!'
         self.dim_source = self.dim_range = grid.size(grid.dim)
         self.grid = grid
         self.boundary_info = boundary_info
