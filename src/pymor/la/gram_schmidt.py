@@ -139,11 +139,20 @@ def gram_schmidt(A, product=None, tol=None, offset=0, find_duplicates=None,
         A.remove(remove)
 
     if check:
-        if not product and not float_cmp_all(A.dot(A, pairwise=False), np.eye(len(A)), check_tol):
-            err = np.max(np.abs(A.dot(A, pairwise=False) - np.eye(len(A))))
-            raise AccuracyError('result not orthogonal (max err={})'.format(err))
-        elif product and not float_cmp_all(product.apply2(A, A, pairwise=False), np.eye(len(A)), check_tol):
-            err = np.max(np.abs(product.apply2(A, A, pairwise=False) - np.eye(len(A))))
+        orthogonal_indicator = A.dot(A, pairwise=False) if not product else product.apply2(A, A, pairwise=False)
+        # do not check the vectors below the offset
+        not_orthonormal_ones = []
+        for ii in np.arange(offset):
+            if not float_cmp_all(orthogonal_indicator[ii][ii], 1.0, check_tol):
+                not_orthonormal_ones.append(ii)
+                orthogonal_indicator[ii][ii] = 1.0
+        # but at least warn about them
+        if len(not_orthonormal_ones) == 1:
+            logger.info('vector {} is not orthogonal (continuing anyway, since offset is {})'.format(not_orthonormal_ones, offset))
+        elif not_orthonormal_ones:
+            logger.info('vectors {} are not orthogonal (continuing anyway, since offset is {})'.format(not_orthonormal_ones, offset))
+        if not float_cmp_all(orthogonal_indicator, np.eye(len(A)), check_tol):
+            err = np.max(np.abs(orthogonal_indicator - np.eye(len(A))))
             raise AccuracyError('result not orthogonal (max err={})'.format(err))
 
     return A
