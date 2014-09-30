@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 # This file is part of the pyMOR project (http://www.pymor.org).
-# Copyright Holders: Felix Albrecht, Rene Milk, Stephan Rave
+# Copyright Holders: Rene Milk, Stephan Rave, Felix Schindler
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
+#
+# Contributors: Michael Laier <m_laie01@uni-muenster.de>
 
-'''Thermalblock with POD demo.
+"""Thermalblock with POD demo.
 
 Usage:
-  thermalblock.py [-hp] [--grid=NI] [--help] [--plot-solutions] [--pod-norm=NORM]
+  thermalblock_pod.py [-hp] [--grid=NI] [--help] [--plot-solutions] [--pod-norm=NORM]
                   [--test=COUNT] XBLOCKS YBLOCKS SNAPSHOTS RBSIZE
 
 
@@ -35,7 +37,7 @@ Options:
 
   --test=COUNT           Use COUNT snapshots for stochastic error estimation
                          [default: 10].
-'''
+"""
 
 from __future__ import absolute_import, division, print_function
 
@@ -52,7 +54,7 @@ from pymor.analyticalproblems import ThermalBlockProblem
 from pymor.discretizers import discretize_elliptic_cg
 from pymor.la.pod import pod
 from pymor.reductors import reduce_generic_rb
-core.getLogger('pymor.discretizations').setLevel('INFO')
+core.set_log_levels({'pymor.discretizations': 'INFO'})
 
 
 def thermalblock_demo(args):
@@ -92,13 +94,13 @@ def thermalblock_demo(args):
 
     print('Solving on training set ...')
     S_train = list(discretization.parameter_space.sample_uniformly(args['SNAPSHOTS']))
-    snapshots = discretization.operator.type_source.empty(discretization.operator.dim_source, reserve=len(S_train))
+    snapshots = discretization.operator.source.empty(reserve=len(S_train))
     for mu in S_train:
         snapshots.append(discretization.solve(mu))
 
     print('Performing POD ...')
     pod_product = discretization.h1_product if args['--pod-norm'] == 'h1' else None
-    rb = pod(snapshots, modes=args['RBSIZE'], product=pod_product)
+    rb = pod(snapshots, modes=args['RBSIZE'], product=pod_product)[0]
 
     print('Reducing ...')
     reductor = reduce_generic_rb
@@ -120,8 +122,6 @@ def thermalblock_demo(args):
         cond = np.linalg.cond(rb_discretization.operator.assemble(mu)._matrix)
         if h1_err > h1_err_max:
             h1_err_max = h1_err
-            Umax = U
-            URBmax = URB
             mumax = mu
         if cond > cond_max:
             cond_max = cond

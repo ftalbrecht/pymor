@@ -1,18 +1,18 @@
 #!/usr/bin/env python
 # This file is part of the pyMOR project (http://www.pymor.org).
-# Copyright Holders: Felix Albrecht, Rene Milk, Stephan Rave
+# Copyright Holders: Rene Milk, Stephan Rave, Felix Schindler
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
 from __future__ import print_function
 from __future__ import division
 import numpy as np
 
-from pymor.grids.interfaces import AffineGridInterface
+from pymor.grids.interfaces import AffineGridWithOrthogonalCentersInterface
 from pymor.grids.referenceelements import line
 
 
-class OnedGrid(AffineGridInterface):
-    '''One-dimensional |Grid| on an interval.
+class OnedGrid(AffineGridWithOrthogonalCentersInterface):
+    """One-dimensional |Grid| on an interval.
 
     Parameters
     ----------
@@ -20,7 +20,7 @@ class OnedGrid(AffineGridInterface):
         Tuple `(left, right)` containing the left and right boundary of the domain.
     num_intervals
         The number of codim-0 entities.
-    '''
+    """
 
     dim = 1
     dim_outer = 1
@@ -30,6 +30,7 @@ class OnedGrid(AffineGridInterface):
         self.reference_element = line
         self._domain = np.array(domain)
         self._num_intervals = num_intervals
+        self._identify_left_right = identify_left_right
         self._sizes = [num_intervals, num_intervals] if identify_left_right else [num_intervals, num_intervals + 1]
         self._width = np.abs(self._domain[1] - self._domain[0]) / self._num_intervals
         self.__subentities = np.vstack((np.arange(self._num_intervals, dtype=np.int32),
@@ -38,6 +39,10 @@ class OnedGrid(AffineGridInterface):
             self.__subentities[-1, -1] = 0
         self.__A = np.ones(self._num_intervals, dtype=np.int32)[:, np.newaxis, np.newaxis] * self._width
         self.__B = (self._domain[0] + self._width * (np.arange(self._num_intervals, dtype=np.int32)))[:, np.newaxis]
+
+    def __reduce__(self):
+        return (OnedGrid,
+                (self._domain, self._num_intervals, self._identify_left_right))
 
     def __str__(self):
         return ('OnedGrid, domain [{xmin},{xmax}]'
@@ -69,12 +74,5 @@ class OnedGrid(AffineGridInterface):
         else:
             return super(OnedGrid, self).embeddings(codim)
 
-    @staticmethod
-    def test_instances():
-        '''Used for unit testing.'''
-        return [OnedGrid(domain=np.array((-2, 2)), num_intervals=10),
-                OnedGrid(domain=np.array((-2, -4)), num_intervals=100),
-                OnedGrid(domain=np.array((-2, -4)), num_intervals=100, identify_left_right=True),
-                OnedGrid(domain=np.array((3, 2)), num_intervals=10),
-                OnedGrid(domain=np.array((3, 2)), num_intervals=10, identify_left_right=True),
-                OnedGrid(domain=np.array((1, 2)), num_intervals=10000)]
+    def orthogonal_centers(self):
+        return self.centers(0)

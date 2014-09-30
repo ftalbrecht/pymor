@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of the pyMOR project (http://www.pymor.org).
-# Copyright Holders: Felix Albrecht, Rene Milk, Stephan Rave
+# Copyright Holders: Rene Milk, Stephan Rave, Felix Schindler
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
 # flake8: noqa
@@ -8,38 +8,42 @@
 # define substitutions for all important interface classes
 interfaces = '''
 
-.. |AffineGrid| replace:: :class:`AffineGrid <pymor.grids.interfaces.AffineGridInterface>`
 .. |AffineGrids| replace:: :class:`AffineGrids <pymor.grids.interfaces.AffineGridInterface>`
-.. |Grid| replace:: :class:`Grid <pymor.grids.interfaces.AffineGridInterface>`
+.. |AffineGrid| replace:: :class:`AffineGrid <pymor.grids.interfaces.AffineGridInterface>`
+.. |BasicInterface| replace:: :class:`~pymor.core.interfaces.BasicInterface`
 .. |BoundaryInfo| replace:: :class:`BoundaryInfo <pymor.grids.interfaces.BoundaryInfoInterface>`
-.. |ConformalTopologicalGrid| replace:: :class:`ConformalTopologicalGrid <pymor.grids.interfaces.ConformalTopologicalGridInterface>`
+.. |BoundaryInfos| replace:: :class:`BoundaryInfos <pymor.grids.interfaces.BoundaryInfoInterface>`
 .. |ConformalTopologicalGrids| replace:: :class:`ConformalTopologicalGrids <pymor.grids.interfaces.ConformalTopologicalGridInterface>`
-.. |Discretization| replace:: :class:`Discretization <pymor.discretizations.interfaces.DiscretizationInterface>`
+.. |ConformalTopologicalGrid| replace:: :class:`ConformalTopologicalGrid <pymor.grids.interfaces.ConformalTopologicalGridInterface>`
 .. |Discretizations| replace:: :class:`Discretizations <pymor.discretizations.interfaces.DiscretizationInterface>`
-.. |DomainDescription| replace:: :class:`DomainDescription <pymor.domaindescriptions.interfaces.DomainDescriptionInterface>`
+.. |Discretization| replace:: :class:`Discretization <pymor.discretizations.interfaces.DiscretizationInterface>`
 .. |DomainDescriptions| replace:: :class:`DomainDescriptions <pymor.domaindescriptions.interfaces.DomainDescriptionInterface>`
-.. |Function| replace:: :class:`Function <pymor.functions.interfaces.FunctionInterface>`
-.. |Functions| replace:: :class:`Functions <pymor.functions.interfaces.FunctionInterface>`
-.. |LincombOperator| replace:: :class:`LincombOperator <pymor.operators.interfaces.LincombOperatorInterface>`
-.. |LincombOperators| replace:: :class:`LincombOperators <pymor.operators.interfaces.LincombOperatorInterface>`
-.. |Operator| replace:: :class:`Operator <pymor.operators.interfaces.OperatorInterface>`
-.. |Operators| replace:: :class:`Operators <pymor.operators.interfaces.OperatorInterface>`
-.. |Functional| replace:: :class:`Functional <pymor.operators.interfaces.OperatorInterface>`
+.. |DomainDescription| replace:: :class:`DomainDescription <pymor.domaindescriptions.interfaces.DomainDescriptionInterface>`
 .. |Functionals| replace:: :class:`Functionals <pymor.operators.interfaces.OperatorInterface>`
-.. |ParameterFunctional| replace:: :class:`ParameterFunctional <pymor.parameters.interfaces.ParameterFunctionalInterface>`
+.. |Functional| replace:: :class:`Functional <pymor.operators.interfaces.OperatorInterface>`
+.. |Functions| replace:: :class:`Functions <pymor.functions.interfaces.FunctionInterface>`
+.. |Function| replace:: :class:`Function <pymor.functions.interfaces.FunctionInterface>`
+.. |Grid| replace:: :class:`Grid <pymor.grids.interfaces.AffineGridInterface>`
+.. |Grids| replace:: :class:`Grids <pymor.grids.interfaces.AffineGridInterface>`
+.. |ImmutableInterface| replace:: :class:`~pymor.core.interfaces.ImmutableInterface`
+.. |LincombOperators| replace:: :class:`LincombOperators <pymor.operators.interfaces.LincombOperator>`
+.. |LincombOperator| replace:: :class:`LincombOperator <pymor.operators.basic.LincombOperator>`
+.. |Operators| replace:: :class:`Operators <pymor.operators.interfaces.OperatorInterface>`
+.. |Operator| replace:: :class:`Operator <pymor.operators.interfaces.OperatorInterface>`
 .. |ParameterFunctionals| replace:: :class:`ParameterFunctionals <pymor.parameters.interfaces.ParameterFunctionalInterface>`
+.. |ParameterFunctional| replace:: :class:`ParameterFunctional <pymor.parameters.interfaces.ParameterFunctionalInterface>`
 .. |ParameterSpace| replace:: :class:`ParameterSpace <pymor.parameters.interfaces.ParameterSpaceInterface>`
-.. |ReferenceElement| replace:: :class:`ReferenceElement <pymor.grids.interfaces.ReferenceElementInterface>`
 .. |ReferenceElements| replace:: :class:`ReferenceElements <pymor.grids.interfaces.ReferenceElementInterface>`
-.. |VectorArray| replace:: :class:`VectorArray <pymor.la.interfaces.VectorArrayInterface>`
+.. |ReferenceElement| replace:: :class:`ReferenceElement <pymor.grids.interfaces.ReferenceElementInterface>`
 .. |VectorArrays| replace:: :class:`VectorArrays <pymor.la.interfaces.VectorArrayInterface>`
+.. |VectorArray| replace:: :class:`VectorArray <pymor.la.interfaces.VectorArrayInterface>`
 
 '''
 
 # substitutions for the most important classes and methods in pyMOR
 common = '''
-.. |defaults| replace:: :class:`defaults <pymor.defaults.Defaults>`
-.. |default| replace:: :class:`default <pymor.defaults.Defaults>`
+.. |analytical problem| replace:: :mod:`analytical problem <pymor.analyticalproblems>`
+.. |analytical problems| replace:: :mod:`analytical problems <pymor.analyticalproblems>`
 
 .. |CacheRegion| replace:: :class:`~pymor.core.cache.CacheRegion`
 
@@ -71,11 +75,14 @@ common = '''
 .. |EmpiricalInterpolatedOperator| replace:: :class:`~pymor.operators.ei.EmpiricalInterpolatedOperator`
 .. |EmpiricalInterpolatedOperators| replace:: :class:`EmpiricalInterpolatedOperators <pymor.operators.ei.EmpiricalInterpolatedOperator>`
 .. |Concatenation| replace:: :class:`~pymor.operators.constructions.Concatenation`
+.. |VectorSpace| replace:: :class:`~pymor.la.interfaces.VectorSpace`
 
 .. |StationaryDiscretization| replace:: :class:`~pymor.discretizations.basic.StationaryDiscretization`
+.. |StationaryDiscretizations| replace:: :class:`StationaryDiscretizations <pymor.discretizations.basic.StationaryDiscretization>`
 .. |InstationaryDiscretization| replace:: :class:`~pymor.discretizations.basic.InstationaryDiscretization`
 
 .. |ParameterType| replace:: :class:`~pymor.parameters.base.ParameterType`
+.. |ParameterTypes| replace:: :class:`ParameterTypes <pymor.parameters.base.ParameterType>`
 .. |Parameter| replace:: :class:`~pymor.parameters.base.Parameter`
 .. |Parameters| replace:: :class:`Parameters <pymor.parameters.base.Parameter>`
 .. |Parametric| replace:: :class:`~pymor.parameters.base.Parametric`
@@ -91,6 +98,8 @@ common = '''
 .. |Array| replace:: :class:`NumPy array <numpy.ndarray>`
 
 .. |OrderedDict| replace:: :class:`~collections.OrderedDict`
+
+.. |invert_options| replace:: :meth:`invert options <pymor.operators.interfaces.OperatorInterface.invert_options>`
 
 '''
 

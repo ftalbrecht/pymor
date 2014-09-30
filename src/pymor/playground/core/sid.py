@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of the pyMOR project (http://www.pymor.org).
-# Copyright Holders: Felix Albrecht, Rene Milk, Stephan Rave
+# Copyright Holders: Rene Milk, Stephan Rave, Felix Schindler
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
 from __future__ import absolute_import, division, print_function
@@ -28,7 +28,7 @@ class generate_sid(object):
         self.func = func
         if func is not None:
             # Beware! The following will probably break in python 3 if there are
-            # keyword-only arguemnts
+            # keyword-only arguments
             args, varargs, keywords, defaults  = inspect.getargspec(func)
             if varargs:
                 raise NotImplementedError

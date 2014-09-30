@@ -1,5 +1,5 @@
 # This file is part of the pyMOR project (http://www.pymor.org).
-# Copyright Holders: Felix Albrecht, Rene Milk, Stephan Rave
+# Copyright Holders: Rene Milk, Stephan Rave, Felix Schindler
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
 from __future__ import absolute_import, division, print_function
@@ -10,49 +10,58 @@ import numpy as np
 
 from pymor.core import ImmutableInterface
 from pymor.la import NumpyVectorArray, induced_norm
-from pymor.operators import LincombOperatorInterface, NumpyMatrixOperator
+from pymor.operators import NumpyMatrixOperator, LincombOperator
 from pymor.reductors.basic import reduce_generic_rb
 
 
-def reduce_stationary_affine_linear(discretization, RB, error_product=None, disable_caching=True,
-                                    extends=None):
-    '''Reductor for stationary linear problems whose `operator` and `rhs` are affinely decomposed.
+def reduce_stationary_affine_linear(discretization, RB, error_product=None, coercivity_estimator=None,
+                                    disable_caching=True, extends=None):
+    """Reductor for linear |StationaryDiscretizations| whose with affinely decomposed operator and rhs.
 
-    We simply use reduce_generic_rb for the actual RB-projection. The only addition
-    is an error estimator. The estimator evaluates the norm of the residual with
-    respect to a given inner product. We do not estimate the norm or the coercivity
-    constant of the operator, therefore the estimated error can be lower than the
-    actual error.
+    This reductor uses :meth:`~pymor.reductors.basic.reduce_generic_rb` for the actual
+    RB-projection. The only addition is an error estimator. The estimator evaluates the
+    norm of the residual with respect to a given inner product. Currently, we do not
+    estimate coercivity constant of the operator, therefore the estimated error
+    can be smaller than the actual error.
 
     Parameters
     ----------
     discretization
-        The discretization which is to be reduced.
+        The |Discretization| which is to be reduced.
     RB
-        The reduced basis (i.e. an array of vectors) on which to project.
+        |VectorArray| containing the reduced basis on which to project.
     error_product
-        Scalar product corresponding to the norm of the error. Used to calculate
-        Riesz respresentatives of the components of the residual. If `None`, the
-        standard L2-product is used.
+        Scalar product given as an |Operator| used to calculate Riesz
+        representative of the residual. If `None`, the Euclidean product is used.
+    coercivity_estimator
+        `None` or a |Parameterfunctional| returning a lower bound for the coercivity
+        constant of the given problem.
     disable_caching
-        If `True`, caching of the solutions of the reduced discretization
-        is disabled.
+        If `True`, caching of solutions is disabled for the reduced |Discretization|.
+    extends
+        Set by :meth:`~pymor.algorithms.greedy.greedy` to the result of the
+        last reduction in case the basis extension was `hierarchic`. Used to prevent
+        re-computation of Riesz representatives already obtained from previous
+        reductions.
 
     Returns
     -------
     rd
-        The reduced discretization.
+        The reduced |Discretization|.
     rc
         The reconstructor providing a `reconstruct(U)` method which reconstructs
-        high-dimensional solutions from solutions U of the reduced discretization.
-    '''
+        high-dimensional solutions from solutions `U` of the reduced |Discretization|.
+    reduction_data
+        Additional data produced by the reduction process. In this case the computed
+        Riesz representatives. (Compare the `extends` parameter.)
+    """
 
     #assert isinstance(discretization, StationaryDiscretization)
     assert discretization.linear
-    assert isinstance(discretization.operator, LincombOperatorInterface)
+    assert isinstance(discretization.operator, LincombOperator)
     assert all(not op.parametric for op in discretization.operator.operators)
     if discretization.rhs.parametric:
-        assert isinstance(discretization.rhs, LincombOperatorInterface)
+        assert isinstance(discretization.rhs, LincombOperator)
         assert all(not op.parametric for op in discretization.rhs.operators)
     assert extends is None or len(extends) == 3
 
@@ -65,8 +74,7 @@ def reduce_stationary_affine_linear(discretization, RB, error_product=None, disa
         old_RB_size = 0
 
     # compute data for estimator
-    space_dim = d.operator.dim_source
-    space_type = d.operator.type_source
+    space = d.operator.source
 
     # compute the Riesz representative of (U, .)_L2 with respect to error_product
     def riesz_representative(U):
@@ -81,31 +89,31 @@ def reduce_stationary_affine_linear(discretization, RB, error_product=None, disa
 
     # compute all components of the residual
     if RB is None:
-        RB = discretization.type_solution.empty(discretization.dim_solution)
+        RB = discretization.solution_space.empty()
 
     if extends:
         R_R, RR_R = old_data['R_R'], old_data['RR_R']
     elif not d.rhs.parametric:
-        R_R = space_type.empty(space_dim, reserve=1)
-        RR_R = space_type.empty(space_dim, reserve=1)
+        R_R = space.empty(reserve=1)
+        RR_R = space.empty(reserve=1)
         append_vector(d.rhs.as_vector(), R_R, RR_R)
     else:
-        R_R = space_type.empty(space_dim, reserve=len(d.rhs.operators))
-        RR_R = space_type.empty(space_dim, reserve=len(d.rhs.operators))
+        R_R = space.empty(reserve=len(d.rhs.operators))
+        RR_R = space.empty(reserve=len(d.rhs.operators))
         for op in d.rhs.operators:
             append_vector(op.as_vector(), R_R, RR_R)
 
     if len(RB) == 0:
-        R_Os = [space_type.empty(space_dim)]
-        RR_Os = [space_type.empty(space_dim)]
+        R_Os = [space.empty()]
+        RR_Os = [space.empty()]
     elif not d.operator.parametric:
-        R_Os = [space_type.empty(space_dim, reserve=len(RB))]
-        RR_Os = [space_type.empty(space_dim, reserve=len(RB))]
+        R_Os = [space.empty(reserve=len(RB))]
+        RR_Os = [space.empty(reserve=len(RB))]
         for i in xrange(len(RB)):
             append_vector(-d.operator.apply(RB, ind=i), R_Os[0], RR_Os[0])
     else:
-        R_Os = [space_type.empty(space_dim, reserve=len(RB)) for _ in xrange(len(d.operator.operators))]
-        RR_Os = [space_type.empty(space_dim, reserve=len(RB)) for _ in xrange(len(d.operator.operators))]
+        R_Os = [space.empty(reserve=len(RB)) for _ in xrange(len(d.operator.operators))]
+        RR_Os = [space.empty(reserve=len(RB)) for _ in xrange(len(d.operator.operators))]
         if old_RB_size > 0:
             for op, R_O, RR_O, old_R_O, old_RR_O in izip(d.operator.operators, R_Os, RR_Os,
                                                          old_data['R_Os'], old_data['RR_Os']):
@@ -128,7 +136,7 @@ def reduce_stationary_affine_linear(discretization, RB, error_product=None, disa
 
     estimator_matrix = NumpyMatrixOperator(estimator_matrix)
 
-    estimator = StationaryAffineLinearReducedEstimator(estimator_matrix)
+    estimator = StationaryAffineLinearReducedEstimator(estimator_matrix, coercivity_estimator)
     rd = rd.with_(estimator=estimator)
     data.update(R_R=R_R, RR_R=RR_R, R_Os=R_Os, RR_Os=RR_Os)
 
@@ -136,9 +144,15 @@ def reduce_stationary_affine_linear(discretization, RB, error_product=None, disa
 
 
 class StationaryAffineLinearReducedEstimator(ImmutableInterface):
+    """Instatiated by :meth:`reduce_stationary_affine_linear`.
 
-    def __init__(self, estimator_matrix):
+    Not to be used directly.
+    """
+
+    def __init__(self, estimator_matrix, coercivity_estimator):
         self.estimator_matrix = estimator_matrix
+        self.coercivity_estimator = coercivity_estimator
+        self.norm = induced_norm(estimator_matrix)
 
     def estimate(self, U, mu, discretization):
         d = discretization
@@ -156,16 +170,20 @@ class StationaryAffineLinearReducedEstimator(ImmutableInterface):
 
         C = np.hstack((CR, np.dot(CO[..., np.newaxis], U.data).ravel()))
 
-        return induced_norm(self.estimator_matrix)(NumpyVectorArray(C))
+        est = self.norm(NumpyVectorArray(C))
+        if self.coercivity_estimator:
+            est /= self.coercivity_estimator(mu)
+
+        return est
 
     def restricted_to_subbasis(self, dim, discretization):
         d = discretization
         cr = 1 if not d.rhs.parametric else len(d.rhs.operators)
         co = 1 if not d.operator.parametric else len(d.operator.operators)
-        old_dim = d.operator.dim_source
+        old_dim = d.operator.source.dim
 
         indices = np.concatenate((np.arange(cr),
                                  ((np.arange(co)*old_dim)[..., np.newaxis] + np.arange(dim)).ravel() + cr))
         matrix = self.estimator_matrix._matrix[indices, :][:, indices]
 
-        return StationaryAffineLinearReducedEstimator(NumpyMatrixOperator(matrix))
+        return StationaryAffineLinearReducedEstimator(NumpyMatrixOperator(matrix), self.coercivity_estimator)

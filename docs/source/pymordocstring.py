@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of the pyMOR project (http://www.pymor.org).
-# Copyright Holders: Felix Albrecht, Rene Milk, Stephan Rave
+# Copyright Holders: Rene Milk, Stephan Rave, Felix Schindler
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
 # This file was originally based upon sphinxcontrib-napoleon
@@ -9,6 +9,7 @@
 from collections import deque, defaultdict, OrderedDict
 from types import MethodType, FunctionType
 import re
+import functools
 
 from sphinx.util.inspect import safe_getattr
 
@@ -18,8 +19,11 @@ INCLUDE_PRIVATE_WITH_DOC = False
 MEMBER_BLACKLIST = tuple()
 
 FIELD_SECTIONS = ('parameters', 'yields', 'returns', 'raises', 'attributes')
-GENERIC_SECTIONS = ('example', 'examples', 'see also')
+GENERIC_SECTIONS = ('example', 'examples', 'see also', 'defaults')
 KNOWN_SECTIONS = FIELD_SECTIONS + GENERIC_SECTIONS
+
+builtin_function_or_method = type(dict.fromkeys)
+method_descriptor = type(dict.get)
 
 
 def table(rows):
@@ -292,7 +296,10 @@ def inspect_class(obj):
     mro = obj.__mro__
 
     def get_full_class_name(c):
-        return c.__module__ + '.' + c.__name__
+        if c.__module__ == '__builtin__':
+            return c.__name__
+        else:
+            return c.__module__ + '.' + c.__name__
 
     def get_class(m):
         for c in mro:
@@ -309,7 +316,7 @@ def inspect_class(obj):
     for k in dir(obj):
         try:
             o = safe_getattr(obj, k)
-            is_method = isinstance(o, (MethodType, FunctionType))
+            is_method = isinstance(o, (MethodType, FunctionType, builtin_function_or_method, method_descriptor))
             if k.startswith('_') and not is_method:
                 continue
             if k == '__init__':
@@ -368,7 +375,7 @@ def inspect_class(obj):
                 attributes[c].append((a, c))
     attributes = {k: [':attr:`~{}.{}`'.format(get_full_class_name(c), n) for n, c in sorted(v, key=key_func)]
                   for k, v in attributes.iteritems()}
-    rows = [(':attr:`~{}`'.format(get_full_class_name(c)), ', '.join(attributes[c]))
+    rows = [(':class:`~{}`'.format(get_full_class_name(c)), ', '.join(attributes[c]))
             for c in mro if c is not object and c in attributes]
     if rows:
         ia = ['.. admonition:: Attributes', '']
@@ -396,6 +403,7 @@ def format_docstring(obj, lines=None, dont_recurse=False):
         ('_methods', None),
         ('_attributes', None),
         ('attributes', format_attributes_section),
+        ('defaults', functools.partial(format_generic_section, use_admonition=True))
     ))
 
     sections = {}

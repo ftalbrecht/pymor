@@ -1,5 +1,5 @@
 # This file is part of the pyMOR project (http://www.pymor.org).
-# Copyright Holders: Felix Albrecht, Rene Milk, Stephan Rave
+# Copyright Holders: Rene Milk, Stephan Rave, Felix Schindler
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
 from __future__ import absolute_import, division, print_function
@@ -14,7 +14,7 @@ from pymor.core.exceptions import ExtensionError
 
 def greedy(discretization, reductor, samples, initial_basis=None, use_estimator=True, error_norm=None,
            extension_algorithm=trivial_basis_extension, target_error=None, max_extensions=None):
-    '''Greedy basis generation algorithm.
+    """Greedy basis generation algorithm.
 
     This algorithm generates a reduced basis by iteratively adding the
     worst approximated solution snapshot for a given training set to the
@@ -78,8 +78,8 @@ def greedy(discretization, reductor, samples, initial_basis=None, use_estimator=
         :max_err:                Last estimated maximum error on the sample set.
         :max_err_mu:             The parameter that corresponds to `max_err`.
         :max_errs:               Sequence of maximum errors during the greedy run.
-        :max_errs_mu:            The parameters corresponding to `max_errs`.
-    '''
+        :max_err_mus:            The parameters corresponding to `max_errs`.
+    """
 
     logger = getLogger('pymor.algorithms.greedy.greedy')
     samples = list(samples)

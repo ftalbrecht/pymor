@@ -1,5 +1,5 @@
 # This file is part of the pyMOR project (http://www.pymor.org).
-# Copyright Holders: Felix Albrecht, Rene Milk, Stephan Rave
+# Copyright Holders: Rene Milk, Stephan Rave, Felix Schindler
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
 from __future__ import absolute_import, division, print_function
@@ -10,7 +10,7 @@ import numpy as np
 
 
 class GaussQuadratures(object):
-    '''Gauss quadrature on the interval [0, 1]'''
+    """Gauss quadrature on the interval [0, 1]"""
 
     @classmethod
     def maxpoints(cls):
@@ -30,16 +30,16 @@ class GaussQuadratures(object):
 
     @classmethod
     def quadrature(cls, order=None, npoints=None):
-        '''returns tuple (P, W) where P is an array of Gauss points with corresponding weights W for
+        """returns tuple (P, W) where P is an array of Gauss points with corresponding weights W for
         the given integration order "order" or with "npoints" integration points
-        '''
+        """
         p = cls._determine_order(order, npoints)
         return cls.points[p], cls.weights[p]
 
     @classmethod
     def iter_quadrature(cls, order=None, npoints=None):
-        '''iterates over a quadrature tuple wise
-        '''
+        """iterates over a quadrature tuple wise
+        """
         p = cls._determine_order(order, npoints)
         for i in xrange(len(cls.points[p])):
             yield (cls.points[p][i], cls.weights[p][i])

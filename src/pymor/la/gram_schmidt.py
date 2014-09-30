@@ -1,23 +1,24 @@
 # This file is part of the pyMOR project (http://www.pymor.org).
-# Copyright Holders: Felix Albrecht, Rene Milk, Stephan Rave
+# Copyright Holders: Rene Milk, Stephan Rave, Felix Schindler
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 #
-# Contributors: Andreas Buhr
+# Contributors: Andreas Buhr <andreas@andreasbuhr.de>
 
 from __future__ import absolute_import, division, print_function
 
 import numpy as np
 
-from pymor import defaults
 from pymor.core import getLogger
+from pymor.core.defaults import defaults
 from pymor.core.exceptions import AccuracyError
 from pymor.tools import float_cmp_all
 
 
-def gram_schmidt(A, product=None, tol=None, offset=0, find_duplicates=None,
-                 reiterate=None, reiteration_threshold=None, check=None, check_tol=None,
+@defaults('tol', 'find_duplicates', 'reiterate', 'reiteration_threshold', 'check', 'check_tol')
+def gram_schmidt(A, product=None, tol=1e-14, offset=0, find_duplicates=True,
+                 reiterate=True, reiteration_threshold=1e-1, check=True, check_tol=1e-3,
                  copy=False):
-    '''Orthonormnalize a |VectorArray| using the Gram-Schmidt algorithm.
+    """Orthonormalize a |VectorArray| using the Gram-Schmidt algorithm.
 
     Parameters
     ----------
@@ -27,28 +28,22 @@ def gram_schmidt(A, product=None, tol=None, offset=0, find_duplicates=None,
         The scalar product w.r.t. which to orthonormalize, given as a linear
         |Operator|. If `None` the Euclidean product is used.
     tol
-        Tolerance to determine a linear dependent row. If `None`, the
-        `gram_schmidt_tol` |default| value is used.
+        Tolerance to determine a linear dependent row.
     offset
         Assume that the first `offset` vectors are already orthogonal and start the
         algorithm at the `offset + 1`-th vector.
     find_duplicates
-        If `True`, eliminate duplicate vectors before the main loop. If `None` the
-        `gram_schmidt_find_duplicates` |default| value is used.
+        If `True`, eliminate duplicate vectors before the main loop.
     reiterate
         If `True`, orthonormalize again if the norm of the orthogonalized vector is
-        much smaller than the norm of the original vector. If `None` the
-        `gram_schmidt_reiterate` |default| value is used.
+        much smaller than the norm of the original vector.
     reiteration_threshold
-        If `reiterate` is `True`, reorthonormalize if the ratio between the norms of
+        If `reiterate` is `True`, re-orthonormalize if the ratio between the norms of
         the orthogonalized vector and the original vector is smaller than this value.
-        If `None`, the `gram_schmidt_reiteration_threshold` |default| value is used.
     check
-        If `True`, check if the resulting VectorArray is really orthonormal. If `None`,
-        the `gram_schmidt_check` |default| value is used.
+        If `True`, check if the resulting VectorArray is really orthonormal.
     check_tol
-        Tolerance for the check. If `None`, the `gram_schmidt_check_tol` |default|
-        value is used.
+        Tolerance for the check.
     copy
         If `True`, create a copy of `A` instead of working directly on `A`.
 
@@ -56,16 +51,9 @@ def gram_schmidt(A, product=None, tol=None, offset=0, find_duplicates=None,
     Returns
     -------
     The orthonormalized |VectorArray|.
-    '''
+    """
 
     logger = getLogger('pymor.la.gram_schmidt.gram_schmidt')
-    tol = defaults.gram_schmidt_tol if tol is None else tol
-    find_duplicates = defaults.gram_schmidt_find_duplicates if find_duplicates is None else find_duplicates
-    reiterate = defaults.gram_schmidt_reiterate if reiterate is None else reiterate
-    reiteration_threshold = defaults.gram_schmidt_reiteration_threshold if reiteration_threshold is None \
-        else reiteration_threshold
-    check = defaults.gram_schmidt_check if check is None else check
-    check_tol = check_tol or defaults.gram_schmidt_check_tol
 
     if copy:
         A = A.copy()
@@ -73,11 +61,13 @@ def gram_schmidt(A, product=None, tol=None, offset=0, find_duplicates=None,
     # find duplicate vectors since in some circumstances these cannot be detected in the main loop
     # (is this really needed or is in this cases the tolerance poorly chosen anyhow)
     if find_duplicates:
-        for i in xrange(len(A)):
+        i = 0
+        while i < len(A):
             duplicates = A.almost_equal(A, ind=i, o_ind=np.arange(max(offset, i + 1), len(A)))
             if np.any(duplicates):
                 A.remove(np.where(duplicates)[0])
                 logger.info("Removing duplicate vectors")
+            i += 1
 
     # main loop
     remove = []
@@ -139,20 +129,12 @@ def gram_schmidt(A, product=None, tol=None, offset=0, find_duplicates=None,
         A.remove(remove)
 
     if check:
-        orthogonal_indicator = A.dot(A, pairwise=False) if not product else product.apply2(A, A, pairwise=False)
-        # do not check the vectors below the offset
-        not_orthonormal_ones = []
-        for ii in np.arange(offset):
-            if not float_cmp_all(orthogonal_indicator[ii][ii], 1.0, check_tol):
-                not_orthonormal_ones.append(ii)
-                orthogonal_indicator[ii][ii] = 1.0
-        # but at least warn about them
-        if len(not_orthonormal_ones) == 1:
-            logger.info('vector {} is not orthogonal (continuing anyway, since offset is {})'.format(not_orthonormal_ones, offset))
-        elif not_orthonormal_ones:
-            logger.info('vectors {} are not orthogonal (continuing anyway, since offset is {})'.format(not_orthonormal_ones, offset))
-        if not float_cmp_all(orthogonal_indicator, np.eye(len(A)), check_tol):
-            err = np.max(np.abs(orthogonal_indicator - np.eye(len(A))))
+        if not product:
+            gramian = A.dot(A, ind=range(offset, len(A)), o_ind=range(offset, len(A)), pairwise=False)
+        else:
+            gramian = product.apply2(A, A, U_ind=range(offset, len(A)), V_ind=range(offset, len(A)), pairwise=False)
+        if not float_cmp_all(gramian, np.eye(len(gramian))):
+            err = np.max(gramian - np.eye(len(gramian)))
             raise AccuracyError('result not orthogonal (max err={})'.format(err))
 
     return A

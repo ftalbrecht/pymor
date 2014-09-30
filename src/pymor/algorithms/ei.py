@@ -1,8 +1,8 @@
 # This file is part of the pyMOR project (http://www.pymor.org).
-# Copyright Holders: Felix Albrecht, Rene Milk, Stephan Rave
+# Copyright Holders: Rene Milk, Stephan Rave, Felix Schindler
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
-'''This module contains algorithms for the emprirical interpolation of operators.
+"""This module contains algorithms for the empirical interpolation of operators.
 
 The main work for generating the necessary interpolation data is handled by
 the :func:`ei_greedy` method. The objects returned by this method can be used
@@ -13,12 +13,12 @@ interpolated. These evaluation can be provided by an instance of
 :class:`EvaluationProvider` which, given a discretization, names of |Operators|
 and a set of parameters, provides evaluations of the |Operators| on the solution
 snapshots for the given parameters. Caching of the evaluations is also
-handeled by :class:`EvaluationProvider`.
+handled by :class:`EvaluationProvider`.
 
 As a convenience, the :func:`interpolate_operators` method allows to perform
 the empirical interpolation of the |Operators| of a given discretization with
 a single function call.
-'''
+"""
 
 from __future__ import absolute_import, division, print_function
 
@@ -28,12 +28,13 @@ from scipy.linalg import solve_triangular, cho_factor, cho_solve
 from pymor.core import getLogger
 from pymor.core.cache import CacheableInterface, cached
 from pymor.la import VectorArrayInterface
+from pymor.la.pod import pod
 from pymor.operators.ei import EmpiricalInterpolatedOperator
 
 
 def ei_greedy(evaluations, error_norm=None, target_error=None, max_interpolation_dofs=None,
               projection='orthogonal', product=None):
-    '''Generate data for empirical operator interpolation by a greedy search (EI-Greedy algorithm).
+    """Generate data for empirical operator interpolation by a greedy search (EI-Greedy algorithm).
 
     Given evaluations of |Operators|, this method generates a collateral_basis and
     interpolation DOFs for empirical operator interpolation. The returned objects
@@ -46,22 +47,22 @@ def ei_greedy(evaluations, error_norm=None, target_error=None, max_interpolation
     ----------
     evaluations
         An iterable of operator evaluations. Each element must be a |VectorArray|
-        of the same type and dimension, but it can hold an arbitrary number of evalutations.
+        of the same type and dimension, but it can hold an arbitrary number of evaluations.
     error_norm
         Norm w.r.t. which to calculate the interpolation error. If `None`, the Euclidean norm
         is used.
     target_error
         Stop the greedy search if the largest approximation error is below this threshold.
     max_interpolation_dofs
-        Stop the greedy search if the numer of interpolation DOF (= dimension of the collateral
+        Stop the greedy search if the number of interpolation DOF (= dimension of the collateral
         basis) reaches this value.
     projection
-        If `ei`, compute the approximation error by comparing the given evalution by the
-        evalution of the interpolated operator. If `orthogonal`, compute the error by
+        If `ei`, compute the approximation error by comparing the given evaluation by the
+        evaluation of the interpolated operator. If `orthogonal`, compute the error by
         comparing with the orthogonal projection onto the span of the collateral basis.
     product
         If `projection == 'orthogonal'`, the product which is used to perform the projection.
-        If `None`, the Eucledian product is used.
+        If `None`, the Euclidean product is used.
 
     Returns
     -------
@@ -72,8 +73,12 @@ def ei_greedy(evaluations, error_norm=None, target_error=None, max_interpolation
     data
         Dict containing the following fields:
 
-            :errors: sequence of maximum approximation errors during greedy search.
-    '''
+            :errors:                sequence of maximum approximation errors during
+                                    greedy search.
+            :triangularity_errors:  sequence of maximum absolute values of interoplation
+                                    matrix coefficients in the upper triangle (should
+                                    be near zero).
+    """
 
     assert projection in ('orthogonal', 'ei')
     assert isinstance(evaluations, VectorArrayInterface)\
@@ -86,8 +91,9 @@ def ei_greedy(evaluations, error_norm=None, target_error=None, max_interpolation
 
     interpolation_dofs = np.zeros((0,), dtype=np.int32)
     interpolation_matrix = np.zeros((0, 0))
-    collateral_basis = type(next(iter(evaluations))).empty(dim=next(iter(evaluations)).dim)
+    collateral_basis = next(iter(evaluations)).empty()
     max_errs = []
+    triangularity_errs = []
 
     def interpolate(U, ind=None):
         coefficients = solve_triangular(interpolation_matrix, U.components(interpolation_dofs, ind=ind).T,
@@ -158,6 +164,7 @@ def ei_greedy(evaluations, error_norm=None, target_error=None, max_interpolation
         max_errs.append(max_err)
 
         triangularity_error = np.max(np.abs(interpolation_matrix - np.tril(interpolation_matrix)))
+        triangularity_errs.append(triangularity_error)
         logger.info('Interpolation matrix is not lower triangular with maximum error of {}'
                     .format(triangularity_error))
 
@@ -170,13 +177,96 @@ def ei_greedy(evaluations, error_norm=None, target_error=None, max_interpolation
 
         logger.info('')
 
-    data = {'errors': max_errs}
+    data = {'errors': max_errs, 'triangularity_errors': triangularity_errs}
+
+    return interpolation_dofs, collateral_basis, data
+
+
+def deim(evaluations, modes=None, error_norm=None, product=None):
+    """Generate data for empirical operator interpolation using DEIM algorithm.
+
+    Given evaluations of |Operators|, this method generates a collateral_basis and
+    interpolation DOFs for empirical operator interpolation. The returned objects
+    can be used to instantiate an |EmpiricalInterpolatedOperator|.
+
+    The collateral basis is determined by the first POD modes of the operator
+    evaluations.
+
+    Parameters
+    ----------
+    evaluations
+        A |VectorArray| of operator evaluations.
+    modes
+        Dimension of the collateral basis i.e. number of POD modes of the operator evaluations.
+    error_norm
+        Norm w.r.t. which to calculate the interpolation error. If `None`, the Euclidean norm
+        is used.
+    product
+        Product |Operator| used for POD.
+
+    Returns
+    -------
+    interpolation_dofs
+        |NumPy array| of the DOFs at which the operators have to be evaluated.
+    collateral_basis
+        |VectorArray| containing the generated collateral basis.
+    data
+        Dict containing the following fields:
+
+            :errors: sequence of maximum approximation errors during greedy search.
+    """
+
+    assert isinstance(evaluations, VectorArrayInterface)
+
+    logger = getLogger('pymor.algorithms.ei.deim')
+    logger.info('Generating Interpolation Data ...')
+
+    collateral_basis = pod(evaluations, modes, product=product)[0]
+
+    interpolation_dofs = np.zeros((0,), dtype=np.int32)
+    interpolation_matrix = np.zeros((0, 0))
+    errs = []
+
+    for i in xrange(len(collateral_basis)):
+
+        if len(interpolation_dofs) > 0:
+            coefficients = np.linalg.solve(interpolation_matrix,
+                                           collateral_basis.components(interpolation_dofs, ind=i).T).T
+            U_interpolated = collateral_basis.lincomb(coefficients, ind=range(len(interpolation_dofs)))
+            ERR = collateral_basis.copy(ind=i)
+            ERR -= U_interpolated
+        else:
+            ERR = collateral_basis.copy(ind=i)
+
+        err = ERR.l2_norm() if error_norm is None else error_norm(ERR)
+
+        logger.info('Interpolation error for basis vector {}: {}'.format(i, err))
+
+        # compute new interpolation dof and collateral basis vector
+        new_dof = ERR.amax()[0][0]
+
+        if new_dof in interpolation_dofs:
+            logger.info('DOF {} selected twice for interplation! Stopping extension loop.'.format(new_dof))
+            break
+
+        interpolation_dofs = np.hstack((interpolation_dofs, new_dof))
+        interpolation_matrix = collateral_basis.components(interpolation_dofs, ind=range(len(interpolation_dofs))).T
+        errs.append(err)
+
+        logger.info('')
+
+    if len(interpolation_dofs) < len(collateral_basis):
+        collateral_basis.remove(ind=range(len(interpolation_dofs), len(collateral_basis)))
+
+    logger.info('Finished.'.format(new_dof))
+
+    data = {'errors': errs}
 
     return interpolation_dofs, collateral_basis, data
 
 
 class EvaluationProvider(CacheableInterface):
-    '''Helper class for providing cached operator evaluations that can be fed into :func:`ei_greedy`.
+    """Helper class for providing cached operator evaluations that can be fed into :func:`ei_greedy`.
 
     This class calls `solve()` on a given |Discretization| for a provided sample of |Parameters| and
     then applies |Operators| to the solutions. The results are cached.
@@ -191,7 +281,7 @@ class EvaluationProvider(CacheableInterface):
         A list of |Parameters| for which `discretization.solve()` is called.
     cache_region
         Name of the |CacheRegion| to use.
-    '''
+    """
 
     def __init__(self, discretization, operators, sample, cache_region='memory'):
         self.cache_region = cache_region
@@ -203,8 +293,7 @@ class EvaluationProvider(CacheableInterface):
     def data(self, k):
         mu = self.sample[k]
         U = self.discretization.solve(mu)
-        AU = self.operators[0].type_range.empty(self.operators[0].dim_range,
-                                                reserve=len(self.operators))
+        AU = self.operators[0].range.empty(reserve=len(self.operators))
         for op in self.operators:
             AU.append(op.apply(U, mu=mu))
         return AU
@@ -221,7 +310,7 @@ class EvaluationProvider(CacheableInterface):
 def interpolate_operators(discretization, operator_names, parameter_sample, error_norm=None,
                           target_error=None, max_interpolation_dofs=None,
                           projection='orthogonal', product=None, cache_region='memory'):
-    '''Empirical operator interpolation using the EI-Greedy algorithm.
+    """Empirical operator interpolation using the EI-Greedy algorithm.
 
     This is a convenience method for facilitating the use of :func:`ei_greedy`. Given
     a |Discretization|, names of |Operators|, and a sample of |Parameters|, first the operators
@@ -241,7 +330,7 @@ def interpolate_operators(discretization, operator_names, parameter_sample, erro
         List of keys in the `operators` dict of the discretization. The corresponding
         |Operators| will be interpolated.
     sample
-        A list of |Parameters| for which solution snapshots are caluclated.
+        A list of |Parameters| for which solution snapshots are calculated.
     error_norm
         See :func:`ei_greedy`.
     target_error
@@ -266,7 +355,7 @@ def interpolate_operators(discretization, operator_names, parameter_sample, erro
             :dofs:   |NumPy array| of the DOFs at which the |Operators| have to be evaluated.
             :basis:  |VectorArray| containing the generated collateral basis.
             :errors: sequence of maximum approximation errors during greedy search.
-    '''
+    """
 
     sample = tuple(parameter_sample)
     operators = [discretization.operators[operator_name] for operator_name in operator_names]
@@ -275,7 +364,7 @@ def interpolate_operators(discretization, operator_names, parameter_sample, erro
     dofs, basis, data = ei_greedy(evaluations, error_norm, target_error, max_interpolation_dofs,
                                   projection=projection, product=product)
 
-    ei_operators = {name: EmpiricalInterpolatedOperator(operator, dofs, basis)
+    ei_operators = {name: EmpiricalInterpolatedOperator(operator, dofs, basis, triangular=True)
                     for name, operator in zip(operator_names, operators)}
     operators_dict = discretization.operators.copy()
     operators_dict.update(ei_operators)

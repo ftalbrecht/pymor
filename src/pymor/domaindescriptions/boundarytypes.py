@@ -1,5 +1,5 @@
 # This file is part of the pyMOR project (http://www.pymor.org).
-# Copyright Holders: Felix Albrecht, Rene Milk, Stephan Rave
+# Copyright Holders: Rene Milk, Stephan Rave, Felix Schindler
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
 from __future__ import absolute_import, division, print_function
@@ -8,7 +8,7 @@ from pymor.core import ImmutableInterface
 
 
 class BoundaryType(ImmutableInterface):
-    '''Represents a boundary type, i.e. Dirichlet, Neumann, etc.
+    """Represents a boundary type, i.e. Dirichlet, Neumann, etc.
 
     By defining a global registry of possible boundary types, we prevent hard
     to track down errors due to typos. Only boundary types that have been
@@ -26,13 +26,13 @@ class BoundaryType(ImmutableInterface):
     ----------
     types
         Set of the names of registered boundary types.
-    '''
+    """
 
-    types = set(('dirichlet', 'neumann', 'robin'))
+    types = {'dirichlet', 'neumann', 'robin'}
 
     @classmethod
     def register_type(cls, name):
-        '''Register a new |BoundaryType| with name `name`.'''
+        """Register a new |BoundaryType| with name `name`."""
         assert isinstance(name, str)
         cls.types.add(name)
 
@@ -49,6 +49,12 @@ class BoundaryType(ImmutableInterface):
     def __eq__(self, other):
         if isinstance(other, BoundaryType):
             return self.name == other.name
+        else:
+            return NotImplemented
+
+    def __ne__(self, other):
+        if isinstance(other, BoundaryType):
+            return self.name != other.name
         else:
             return NotImplemented
 

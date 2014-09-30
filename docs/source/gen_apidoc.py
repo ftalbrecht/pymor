@@ -1,3 +1,7 @@
+# This file is part of the pyMOR project (http://www.pymor.org).
+# Copyright Holders: Rene Milk, Stephan Rave, Felix Schindler
+# License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
+
 from __future__ import print_function
 
 from types import FunctionType
@@ -6,7 +10,7 @@ import pkgutil
 
 BUILD_DIR = 'generated'
 
-CLASS_OPTIONS = [':show-inheritance:', ':members:', ':special-members:']
+CLASS_OPTIONS = [':show-inheritance:', ':members:', ':special-members:', ':exclude-members: __init__, __weakref__']
 FUNCTION_OPTIONS = []
 MODULE_OPTIONS = [':show-inheritance:']
 
@@ -25,7 +29,7 @@ def walk(module):
             modules.append(module.__name__ + '.' + modname)
     modules = sorted(modules)
     packages = sorted(packages)
-    with open('{}/{}.rst'.format(BUILD_DIR, module.__name__), 'wt') as f:
+    with open('{}/{}.rst'.format(BUILD_DIR, module.__name__), 'wb') as f:
         print(section('{} package'.format(module.__name__)), file=f)
 
         print('.. automodule:: ' + module.__name__, file=f)
@@ -51,6 +55,8 @@ def walk(module):
                 module = __import__(m, fromlist='none')
                 for k, v in sorted(module.__dict__.iteritems()):
                     if isinstance(v, (type, FunctionType)) and v.__module__ == m:
+                        if v.__name__.startswith('_') and not v.__doc__:
+                            continue
                         print('---------\n\n', file=f)
                         if isinstance(v, type):
                             print('.. autoclass:: ' + m + '.' + k, file=f)

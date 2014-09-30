@@ -1,10 +1,15 @@
 # This file is part of the pyMOR project (http://www.pymor.org).
-# Copyright Holders: Felix Albrecht, Rene Milk, Stephan Rave
+# Copyright Holders: Rene Milk, Stephan Rave, Felix Schindler
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
 from __future__ import absolute_import, division, print_function
 
-from pyvtk import (VtkData, UnstructuredGrid, PointData, CellData, Scalars)
+try:
+    from pyvtk import (VtkData, UnstructuredGrid, PointData, CellData, Scalars)
+    HAVE_PYVTK = True
+except ImportError:
+    HAVE_PYVTK = False
+
 import numpy as np
 
 from pymor.grids import referenceelements
@@ -12,10 +17,10 @@ from pymor.grids.constructions import flatten_grid
 
 
 def _write_meta_file(filename_base, steps, fn_tpl):
-    '''Outputs a collection file for a series of vtu files
+    """Outputs a collection file for a series of vtu files
 
     This DOES NOT WORK for the currently used legacy vtk format below
-    '''
+    """
 
     pvd_header = '''<?xml version="1.0"?>
 <VTKFile type="Collection" version="0.1" byte_order="LittleEndian">
@@ -68,12 +73,12 @@ def _write_vtu_series(us_grid, data, filename_base, binary_vtk, last_step, is_ce
 
 
 def write_vtk(grid, data, filename_base, codim=2, binary_vtk=True, last_step=None):
-    '''Output grid-associated data in (legacy) vtk format
+    """Output grid-associated data in (legacy) vtk format
 
     Parameters
     ----------
     grid
-        a pymor grid with triangular or rectilinear reference element
+        a |Grid| with triangular or rectilinear reference element
 
     data
         VectorArrayInterface instance with either cell (ie one datapoint per codim 0 entity)
@@ -84,7 +89,9 @@ def write_vtk(grid, data, filename_base, codim=2, binary_vtk=True, last_step=Non
 
     last_step
         if set must be <= len(data) to restrict output of timeseries
-    '''
+    """
+    if not HAVE_PYVTK:
+        raise ImportError('could not import pyvtk')
     if grid.dim != 2 or grid.dim_outer != 2:
         raise NotImplementedError
     if codim not in (0, 2):

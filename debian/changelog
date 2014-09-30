@@ -1,0 +1,11 @@
+pymor (0.2.2~12.04~ppa2) precise; urgency=medium
+
+  * new upstream release
+
+ -- Rene Milk <rene.milk@wwu.de>  Tue, 23 Sep 2014 18:11:55 +0200
+
+pymor (0.2.0~12.04~ppa3) precise; urgency=low
+
+  * Initial debianisation
+
+ -- Rene Milk <rene.milk@uni-muenster.de>  Wed, 26 Feb 2014 00:16:17 +0100

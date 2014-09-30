@@ -1,5 +1,5 @@
 # This file is part of the pyMOR project (http://www.pymor.org).
-# Copyright Holders: Felix Albrecht, Rene Milk, Stephan Rave
+# Copyright Holders: Rene Milk, Stephan Rave, Felix Schindler
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
 from __future__ import absolute_import, division, print_function
@@ -11,7 +11,7 @@ from pymor.domaindescriptions.interfaces import DomainDescriptionInterface
 
 
 class RectDomain(DomainDescriptionInterface):
-    '''Describes a rectangular domain.
+    """Describes a rectangular domain.
 
     |BoundaryTypes| can be associated edgewise.
 
@@ -36,9 +36,9 @@ class RectDomain(DomainDescriptionInterface):
     right
     top
     bottom
-    '''
+    """
 
-    def __init__(self, domain=[[0, 0], [1, 1]], left=BoundaryType('dirichlet'), right=BoundaryType('dirichlet'),
+    def __init__(self, domain=([0, 0], [1, 1]), left=BoundaryType('dirichlet'), right=BoundaryType('dirichlet'),
                  top=BoundaryType('dirichlet'), bottom=BoundaryType('dirichlet')):
         assert domain[0][0] <= domain[1][0]
         assert domain[0][1] <= domain[1][1]
@@ -73,9 +73,16 @@ class RectDomain(DomainDescriptionInterface):
     def diameter(self):
         return np.sqrt(self.width ** 2 + self.height ** 2)
 
+    def __repr__(self):
+        left = ', left=' + repr(self.left) if self.left != BoundaryType('dirichlet') else ''
+        right = ', right=' + repr(self.right) if self.right != BoundaryType('dirichlet') else ''
+        top = ', top=' + repr(self.top) if self.top != BoundaryType('dirichlet') else ''
+        bottom = ', bottom=' + repr(self.bottom) if self.bottom != BoundaryType('dirichlet') else ''
+        return 'RectDomain({}{})'.format(str(self.domain).replace('\n', ','), left + right + top + bottom)
+
 
 class CylindricalDomain(DomainDescriptionInterface):
-    '''Describes a cylindrical domain.
+    """Describes a cylindrical domain.
 
     |BoundaryTypes| can be associated edgewise.
 
@@ -94,9 +101,9 @@ class CylindricalDomain(DomainDescriptionInterface):
     domain
     top
     bottom
-    '''
+    """
 
-    def __init__(self, domain=[[0, 0], [1, 1]], top=BoundaryType('dirichlet'), bottom=BoundaryType('dirichlet')):
+    def __init__(self, domain=([0, 0], [1, 1]), top=BoundaryType('dirichlet'), bottom=BoundaryType('dirichlet')):
         assert domain[0][0] <= domain[1][0]
         assert domain[0][1] <= domain[1][1]
         self.boundary_types = frozenset({top, bottom})
@@ -128,9 +135,14 @@ class CylindricalDomain(DomainDescriptionInterface):
     def diameter(self):
         return np.sqrt(self.width ** 2 + self.height ** 2)
 
+    def __repr__(self):
+        top = ', top=' + repr(self.top) if self.top != BoundaryType('dirichlet') else ''
+        bottom = ', bottom=' + repr(self.bottom) if self.bottom != BoundaryType('dirichlet') else ''
+        return 'CylindricalDomain({}{})'.format(str(self.domain).replace('\n', ','), top + bottom)
+
 
 class TorusDomain(DomainDescriptionInterface):
-    '''Describes a domain with the topology of a torus.
+    """Describes a domain with the topology of a torus.
 
     Parameters
     ----------
@@ -142,9 +154,9 @@ class TorusDomain(DomainDescriptionInterface):
     Attributes
     ----------
     domain
-    '''
+    """
 
-    def __init__(self, domain=[[0, 0], [1, 1]]):
+    def __init__(self, domain=([0, 0], [1, 1])):
         assert domain[0][0] <= domain[1][0]
         assert domain[0][1] <= domain[1][1]
         self.boundary_types = frozenset()
@@ -174,9 +186,12 @@ class TorusDomain(DomainDescriptionInterface):
     def diameter(self):
         return np.sqrt(self.width ** 2 + self.height ** 2)
 
+    def __repr__(self):
+        return 'TorusDomain({})'.format(str(self.domain).replace('\n', ','))
+
 
 class LineDomain(DomainDescriptionInterface):
-    '''Describes an interval domain.
+    """Describes an interval domain.
 
     |BoundaryTypes| can be associated edgewise.
 
@@ -194,9 +209,9 @@ class LineDomain(DomainDescriptionInterface):
     domain
     left
     right
-    '''
+    """
 
-    def __init__(self, domain=[0, 1], left=BoundaryType('dirichlet'), right=BoundaryType('dirichlet')):
+    def __init__(self, domain=(0, 1), left=BoundaryType('dirichlet'), right=BoundaryType('dirichlet')):
         assert domain[0] <= domain[1]
         self.boundary_types = frozenset({left, right})
         self.left = left
@@ -207,9 +222,14 @@ class LineDomain(DomainDescriptionInterface):
     def width(self):
         return self.domain[1] - self.domain[0]
 
+    def __repr__(self):
+        left = ', left=' + repr(self.left) if self.left != BoundaryType('dirichlet') else ''
+        right = ', right=' + repr(self.right) if self.right != BoundaryType('dirichlet') else ''
+        return 'LineDomain({}{})'.format(self.domain, left + right)
+
 
 class CircleDomain(DomainDescriptionInterface):
-    '''Describes a domain with the topology of a circle, i.e. a line with
+    """Describes a domain with the topology of a circle, i.e. a line with
     identified end points.
 
     Parameters
@@ -220,12 +240,15 @@ class CircleDomain(DomainDescriptionInterface):
     Attributes
     ----------
     domain
-    '''
+    """
 
-    def __init__(self, domain=[0, 1]):
+    def __init__(self, domain=(0, 1)):
         assert domain[0] <= domain[1]
         self.domain = np.array(domain)
 
     @property
     def width(self):
         return self.domain[1] - self.domain[0]
+
+    def __repr__(self):
+        return 'CircleDomain({})'.format(self.domain)

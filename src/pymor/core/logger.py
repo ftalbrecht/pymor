@@ -1,5 +1,5 @@
 # This file is part of the pyMOR project (http://www.pymor.org).
-# Copyright Holders: Felix Albrecht, Rene Milk, Stephan Rave
+# Copyright Holders: Rene Milk, Stephan Rave, Felix Schindler
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
 """Utilities for colorized log output.
@@ -12,10 +12,12 @@ import logging
 import os
 import time
 
+from pymor.core.defaults import defaults
+
 BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(8)
 
 # The background is set with 40 plus the number of the color, and the foreground with 30
-# These are the sequences need to get colored ouput
+# These are the sequences need to get colored output
 RESET_SEQ = "\033[0m"
 COLOR_SEQ = "\033[1;%dm"
 BOLD_SEQ = "\033[1m"
@@ -53,7 +55,8 @@ def formatter_message(message, use_color):
 
 class ColoredFormatter(logging.Formatter):
     """A logging.Formatter that inserts tty control characters to color
-    loglevel keyword output
+    loglevel keyword output. Coloring can be disabled by setting the
+    `PYMOR_COLORS_DISABLE` environment variable to `1`.
     """
 
     def __init__(self):
@@ -113,4 +116,38 @@ def getLogger(module, level=None, filename=None, handler_cls=logging.StreamHandl
         logger.setLevel(LOGLEVEL_MAPPING[level])
     return logger
 
-dummy_logger = getLogger('pymor.dummylogger', level='fatal')
+
+class DummyLogger(object):
+
+    __slots__ = []
+
+    def nop(self, *args, **kwargs):
+        return None
+
+    propagate = False
+    debug = nop
+    info = nop
+    warning = nop
+    error = nop
+    critical = nop
+    log = nop
+    exception = nop
+
+    def isEnabledFor(sefl, lvl):
+        return False
+
+    def getEffectiveLevel(self):
+        return None
+
+    def getChild(self):
+        return self
+
+
+dummy_logger = DummyLogger()
+
+
+@defaults('levels')
+def set_log_levels(levels={'pymor': 'WARN',
+                           'pymor.core': 'WARN'}):
+    for k, v in levels.items():
+        getLogger(k).setLevel(v)

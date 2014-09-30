@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of the pyMOR project (http://www.pymor.org).
-# Copyright Holders: Felix Albrecht, Rene Milk, Stephan Rave
+# Copyright Holders: Rene Milk, Stephan Rave, Felix Schindler
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
 from __future__ import absolute_import, division, print_function
@@ -17,7 +17,7 @@ from pymor.tools import method_arguments, FrozenDict
 
 
 class DiscretizationBase(DiscretizationInterface):
-    '''Base class for |Discretizations| providing some common functionality.'''
+    """Base class for |Discretizations| providing some common functionality."""
 
     def __init__(self, operators, functionals, vector_operators, products=None, estimator=None, visualizer=None,
                  cache_region='disk', name=None):
@@ -46,9 +46,24 @@ class DiscretizationBase(DiscretizationInterface):
     def __estimate(self, U, mu=None):
         return self.estimator.estimate(U, mu=mu, discretization=self)
 
+    def __getstate__(self):
+        d = self.__dict__.copy()
+        if 'estimate' in d:
+            del d['estimate']
+        if 'visualize' in d:
+            del d['visualize']
+        return d
+
+    def __setstate__(self, s):
+        if s['estimator']:
+            s['estimate'] = self.__estimate
+        if s['visualizer']:
+            s['visualize'] = self.__visualize
+        self.__dict__.update(s)
+
 
 class StationaryDiscretization(DiscretizationBase):
-    '''Generic class for discretizations of stationary problems.
+    """Generic class for discretizations of stationary problems.
 
     This class describes discrete problems given by the equation::
 
@@ -91,7 +106,7 @@ class StationaryDiscretization(DiscretizationBase):
         The |Operator| L. Synonymous for `operators['operator']`.
     rhs
         The |Functional| F. Synonymous for `functionals['rhs']`.
-    '''
+    """
 
     sid_ignore = ('visualizer', 'cache_region', 'name')
 
@@ -99,16 +114,15 @@ class StationaryDiscretization(DiscretizationBase):
                  cache_region='disk', name=None):
         assert isinstance(operator, OperatorInterface)
         assert isinstance(rhs, OperatorInterface) and rhs.linear
-        assert operator.dim_source == operator.dim_range == rhs.dim_source
-        assert rhs.dim_range == 1
+        assert operator.source == operator.range == rhs.source
+        assert rhs.range.dim == 1
 
         operators = {'operator': operator}
         functionals = {'rhs': rhs}
         super(StationaryDiscretization, self).__init__(operators=operators, functionals=functionals,
                                                        vector_operators={}, products=products, estimator=estimator,
                                                        visualizer=visualizer, cache_region=cache_region, name=name)
-        self.dim_solution = operator.dim_source
-        self.type_solution = operator.type_source
+        self.solution_space = operator.source
         self.operator = operator
         self.rhs = rhs
         self.operators = operators
@@ -145,7 +159,7 @@ class StationaryDiscretization(DiscretizationBase):
 
 
 class InstationaryDiscretization(DiscretizationBase):
-    '''Generic class for discretizations of stationary problems.
+    """Generic class for discretizations of stationary problems.
 
     This class describes instationary problems given by the equations::
 
@@ -164,7 +178,7 @@ class InstationaryDiscretization(DiscretizationBase):
     initial_data
         The initial data u_0. Either a |VectorArray| of length 1 or
         (for the |Parameter|-dependent case) a vector-like |Operator|
-        (i.e. a linear |Operator| with `dim_source == 1`).
+        (i.e. a linear |Operator| with `source.dim == 1`).
     operator
         The |Operator| L.
     rhs
@@ -215,7 +229,7 @@ class InstationaryDiscretization(DiscretizationBase):
         The mass operator M. Synonymous for `operators['mass']`.
     time_stepper
         The provided time-stepper.
-    '''
+    """
 
     sid_ignore = ('visualizer', 'cache_region', 'name')
 
@@ -223,16 +237,16 @@ class InstationaryDiscretization(DiscretizationBase):
                  products=None, parameter_space=None, estimator=None, visualizer=None, cache_region='disk',
                  name=None):
         assert isinstance(initial_data, (VectorArrayInterface, OperatorInterface))
-        assert not isinstance(initial_data, OperatorInterface) or initial_data.dim_source == 1
+        assert not isinstance(initial_data, OperatorInterface) or initial_data.source.dim == 1
         assert isinstance(operator, OperatorInterface)
         assert rhs is None or isinstance(rhs, OperatorInterface) and rhs.linear
         assert mass is None or isinstance(mass, OperatorInterface) and mass.linear
         if isinstance(initial_data, VectorArrayInterface):
             initial_data = VectorOperator(initial_data, name='initial_data')
         assert isinstance(time_stepper, TimeStepperInterface)
-        assert operator.dim_source == operator.dim_range == initial_data.dim_range
-        assert rhs is None or rhs.dim_source == operator.dim_source and rhs.dim_range == 1
-        assert mass is None or mass.dim_source == mass.dim_range == operator.dim_source
+        assert operator.source == operator.range == initial_data.range
+        assert rhs is None or rhs.source == operator.source and rhs.range.dim == 1
+        assert mass is None or mass.source == mass.range == operator.source
 
         operators = {'operator': operator, 'mass': mass}
         functionals = {'rhs': rhs}
@@ -242,8 +256,7 @@ class InstationaryDiscretization(DiscretizationBase):
                                                          products=products, estimator=estimator,
                                                          visualizer=visualizer, cache_region=cache_region, name=name)
         self.T = T
-        self.dim_solution = operator.dim_source
-        self.type_solution = operator.type_source
+        self.solution_space = operator.source
         self.initial_data = initial_data
         self.operator = operator
         self.rhs = rhs
@@ -279,7 +292,7 @@ class InstationaryDiscretization(DiscretizationBase):
         return self._with_via_init(kwargs)
 
     def _solve(self, mu=None):
-        mu = self.parse_parameter(mu).copy() if mu is not None else Parameter({})
+        mu = self.parse_parameter(mu).copy() if self.parametric else Parameter({})
 
         # explicitly checking if logging is disabled saves the expensive str(mu) call
         if not self.logging_disabled:

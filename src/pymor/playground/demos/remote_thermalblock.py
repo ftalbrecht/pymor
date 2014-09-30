@@ -1,9 +1,16 @@
 #!/usr/bin/env python
 # This file is part of the pyMOR project (http://www.pymor.org).
-# Copyright Holders: Felix Albrecht, Rene Milk, Stephan Rave
+# Copyright Holders: Rene Milk, Stephan Rave, Felix Schindler
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
-'''Remote Thermalblock demo.
+############################################################################################
+#                                                                                          #
+# FIXME This code has not been adapted to the new VectorArray interface and will not work! #
+#                                                                                          #
+############################################################################################
+
+
+"""Remote Thermalblock demo.
 
 Usage:
   thermalblock.py [-eh] [--estimator-norm=NORM] [--extension-alg=ALG] [--grid=NI] [--help]
@@ -38,7 +45,7 @@ Options:
 
   --test=COUNT           Use COUNT snapshots for stochastic error estimation
                          [default: 10].
-'''
+"""
 
 from __future__ import absolute_import, division, print_function
 

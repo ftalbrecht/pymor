@@ -1,26 +1,28 @@
 # -*- coding: utf-8 -*-
 # This file is part of the pyMOR project (http://www.pymor.org).
-# Copyright Holders: Felix Albrecht, Rene Milk, Stephan Rave
+# Copyright Holders: Rene Milk, Stephan Rave, Felix Schindler
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
-'''
+"""
 This module contains backend implementations of pyMOR cache regions using
 the `dogpile <https://pypi.python.org/pypi/dogpile.cache>`_ package.
 
 Not to be used directly.
-'''
+"""
 
-from tempfile import gettempdir
 from collections import OrderedDict
-from pprint import pformat
-import sys
-import os
-from os.path import join
 from collections import deque
+import getpass
+from os.path import join
+from pprint import pformat
+from tempfile import gettempdir
+import os
+import sys
+
 from dogpile import cache as dc
 from dogpile.cache.backends.file import DBMBackend
 
-import pymor.core
+from pymor.core.pickle import dump, load, dumps, loads
 from pymor.core import BasicInterface
 from pymor.tools import memory
 
@@ -30,8 +32,8 @@ from pymor.tools import memory
 import dogpile.cache.compat
 import types
 patched_pickle = types.ModuleType('pickle')
-patched_pickle.dumps = pymor.core.dumps
-patched_pickle.loads = pymor.core.loads
+patched_pickle.dumps = dumps
+patched_pickle.loads = loads
 dogpile.cache.compat.pickle = patched_pickle
 
 NO_CACHE_CONFIG = {"backend": 'Dummy'}
@@ -39,11 +41,11 @@ DEFAULT_MEMORY_CONFIG = {"backend": 'LimitedMemory', 'arguments.max_kbytes': 200
 SMALL_MEMORY_CONFIG = {"backend": 'LimitedMemory', 'arguments.max_keys': 20,
                        'arguments.max_kbytes': 20}
 DEFAULT_DISK_CONFIG = {"backend": 'LimitedFile',
-                       "arguments.filename": join(gettempdir(), 'pymor.cache.dbm'),
+                       "arguments.filename": join(gettempdir(), 'pymor.cache.{}.dbm'.format(getpass.getuser())),
                        'arguments.max_keys': 2000,
                        'arguments.max_size': 1024 ** 3}
 SMALL_DISK_CONFIG = {"backend": 'LimitedFile',
-                     "arguments.filename": join(gettempdir(), 'pymor.small_cache.dbm'),
+                     "arguments.filename": join(gettempdir(), 'pymor.small_cache.{}.dbm'.format(getpass.getuser())),
                      'arguments.max_keys': 20}
 
 NO_VALUE = dc.api.NO_VALUE
@@ -67,12 +69,12 @@ class DummyBackend(BasicInterface, dc.api.CacheBackend):
 class LimitedMemoryBackend(BasicInterface, dc.api.CacheBackend):
 
     def __init__(self, argument_dict):
-        '''If argument_dict contains a value for max_kbytes this the total memory limit in kByte that is enforced on the
+        """If argument_dict contains a value for max_kbytes this the total memory limit in kByte that is enforced on the
         internal cache dictionary, otherwise it's set to sys.maxint.
         If argument_dict contains a value for max_keys this maximum amount of cache values kept in the
         internal cache dictionary, otherwise it's set to sys.maxlen.
         If necessary values are deleted from the cache in FIFO order.
-        '''
+        """
         self.logger.debug('LimitedMemoryBackend args {}'.format(pformat(argument_dict)))
         self._max_keys = argument_dict.get('max_keys', sys.maxsize)
         self._max_bytes = argument_dict.get('max_kbytes', sys.maxint / 1024) * 1024
@@ -104,10 +106,10 @@ class LimitedMemoryBackend(BasicInterface, dc.api.CacheBackend):
 class LimitedFileBackend(DBMBackend, BasicInterface):
 
     def __init__(self, argument_dict):
-        '''If argument_dict contains a value for max_keys this maximum amount of cache values kept in the
+        """If argument_dict contains a value for max_keys this maximum amount of cache values kept in the
         internal cache file, otherwise its set to sys.maxlen.
         If necessary values are deleted from the cache in FIFO order.
-        '''
+        """
         argument_dict['filename'] = argument_dict.get('filename', os.path.join(gettempdir(), 'pymor'))
         super(LimitedFileBackend, self).__init__(argument_dict)
         self.logger.debug('LimitedFileBackend args {}'.format(pformat(argument_dict)))
@@ -115,15 +117,15 @@ class LimitedFileBackend(DBMBackend, BasicInterface):
         self._keylist_fn = self.filename + '.keys'
         self._max_size = argument_dict.get('max_size', None)
         try:
-            self._keylist, self._size = pymor.core.load(open(self._keylist_fn, 'rb'))
-        except:
+            self._keylist, self._size = load(open(self._keylist_fn, 'rb'))
+        except Exception:
             self._keylist = deque()
             self._size = 0
         self._enforce_limits(None)
         self.print_limit()
 
     def _dump_keylist(self):
-        pymor.core.dump((self._keylist, self._size), open(self._keylist_fn, 'wb'))
+        dump((self._keylist, self._size), open(self._keylist_fn, 'wb'))
 
     def _new_key(self, key, size):
         self._keylist.append((key, size))
@@ -147,7 +149,7 @@ class LimitedFileBackend(DBMBackend, BasicInterface):
 
     def set(self, key, value):
         self._enforce_limits(value)
-        value = pymor.core.dumps(value)
+        value = dumps(value)
         if not key in self._keylist:
             self._new_key(key, len(value))
         with self._dbm_file(True) as dbm:

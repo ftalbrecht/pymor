@@ -1,5 +1,5 @@
 # This file is part of the pyMOR project (http://www.pymor.org).
-# Copyright Holders: Felix Albrecht, Rene Milk, Stephan Rave
+# Copyright Holders: Rene Milk, Stephan Rave, Felix Schindler
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
 from __future__ import absolute_import, division, print_function
@@ -11,7 +11,7 @@ from pymor.grids.referenceelements import triangle
 
 
 class TriaGrid(AffineGridInterface):
-    '''Basic implementation of a triangular grid on a rectangular domain.
+    """Basic implementation of a triangular grid on a rectangular domain.
 
     The global face, edge and vertex indices are given as follows ::
 
@@ -32,13 +32,13 @@ class TriaGrid(AffineGridInterface):
     domain
         Tuple `(ll, ur)` where `ll` defines the lower left and `ur` the upper right
         corner of the domain.
-    '''
+    """
 
     dim = 2
     dim_outer = 2
     reference_element = triangle
 
-    def __init__(self, num_intervals=(2, 2), domain=[[0, 0], [1, 1]]):
+    def __init__(self, num_intervals=(2, 2), domain=([0, 0], [1, 1])):
         self.num_intervals = num_intervals
         self.domain = np.array(domain)
 
@@ -94,14 +94,18 @@ class TriaGrid(AffineGridInterface):
         A = np.vstack((A0, A1))
         self.__embeddings = (A, B)
 
+    def __reduce__(self):
+        return (TriaGrid,
+                (self.num_intervals, self.domain))
+
     def __str__(self):
         return (('Tria-Grid on domain [{xmin},{xmax}] x [{ymin},{ymax}]\n' +
                  'x0-intervals: {x0ni}, x1-intervals: {x1ni}\n' +
-                 'faces: {faces}, edges: {edges}, verticies: {verticies}')
+                 'faces: {faces}, edges: {edges}, vertices: {vertices}')
                 .format(xmin=self.x0_range[0], xmax=self.x0_range[1],
                         ymin=self.x1_range[0], ymax=self.x1_range[1],
                         x0ni=self.x0_num_intervals, x1ni=self.x1_num_intervals,
-                        faces=self.size(0), edges=self.size(1), verticies=self.size(2)))
+                        faces=self.size(0), edges=self.size(1), vertices=self.size(2)))
 
     def size(self, codim=0):
         assert 0 <= codim <= 2, 'Invalid codimension'
@@ -123,8 +127,3 @@ class TriaGrid(AffineGridInterface):
             return self.__embeddings
         else:
             return super(TriaGrid, self).embeddings(codim)
-
-    @staticmethod
-    def test_instances():
-        '''Used for unit testing.'''
-        return [TriaGrid((2, 4)), TriaGrid((1, 1)), TriaGrid((42, 42))]

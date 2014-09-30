@@ -1,5 +1,5 @@
 # This file is part of the pyMOR project (http://www.pymor.org).
-# Copyright Holders: Felix Albrecht, Rene Milk, Stephan Rave
+# Copyright Holders: Rene Milk, Stephan Rave, Felix Schindler
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
 from __future__ import absolute_import, division, print_function
@@ -12,7 +12,7 @@ from pymor.grids.interfaces import AffineGridInterface
 
 
 class SubGrid(AffineGridInterface):
-    '''A subgrid of a |Grid|.
+    """A subgrid of a |Grid|.
 
     Given a list of a |Grid| and a list of codim-0 entities
     we construct the minimal subgrid of the grid, containing
@@ -22,8 +22,8 @@ class SubGrid(AffineGridInterface):
     ----------
     grid
         |Grid| of which a subgrid is to be created.
-    entites
-        |Array| of global indicies of the codim-0 entities which
+    entities
+        |Array| of global indices of the codim-0 entities which
         are to be contained in the subgrid.
 
     Attributes
@@ -32,7 +32,7 @@ class SubGrid(AffineGridInterface):
         The |Grid| from which the subgrid was constructed. :class:`Subgrid`
         only stores a :mod:`weakref` to the grid, so accessing this property
         might return `None` if the original grid has been destroyed.
-    '''
+    """
 
     reference_element = None
 
@@ -66,18 +66,18 @@ class SubGrid(AffineGridInterface):
         return self.__parent_grid()
 
     def parent_indices(self, codim):
-        '''`retval[e]` is the index of the `e`-th codim-`codim` entity in the parent grid.'''
+        """`retval[e]` is the index of the `e`-th codim-`codim` entity in the parent grid."""
         assert 0 <= codim <= self.dim, 'Invalid codimension'
         return self.__parent_indices[codim]
 
     def indices_from_parent_indices(self, ind, codim):
-        '''Maps an |Array| of indicies of codim-`codim` entites of the parent grid to indicies of the subgrid.
+        """Maps an |Array| of indicies of codim-`codim` entites of the parent grid to indicies of the subgrid.
 
         Raises
         ------
         ValueError
             Not all provided indices correspond to entities contained in the subgrid.
-        '''
+        """
         assert 0 <= codim <= self.dim, 'Invalid codimension'
         ind = ind.ravel()
         # TODO Find better implementation of the following
@@ -103,18 +103,7 @@ class SubGrid(AffineGridInterface):
         else:
             return super(SubGrid, self).embeddings(codim)
 
-    def test_instances():
-        from pymor.grids.rect import RectGrid
-        from pymor.grids.tria import TriaGrid
-        import random
-        import math as m
-        grids = [RectGrid((1, 1)), TriaGrid((1, 1)), RectGrid((8, 8)), TriaGrid((24, 24))]
-        subgrids = []
-        for g in grids:
-            size = g.size(0)
-            subgrids.append(SubGrid(g, np.arange(size, dtype=np.int32)))
-            if size >= 4:
-                subgrids.append(SubGrid(g, np.array(random.sample(xrange(size), int(m.floor(size / 4))))))
-            if size >= 2:
-                subgrids.append(SubGrid(g, np.array(random.sample(xrange(size), int(m.floor(size / 2))))))
-        return subgrids
+    def __getstate__(self):
+        d = self.__dict__.copy()
+        del d['_SubGrid__parent_grid']
+        return d

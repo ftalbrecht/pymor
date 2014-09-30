@@ -1,5 +1,5 @@
 # This file is part of the pyMOR project (http://www.pymor.org).
-# Copyright Holders: Felix Albrecht, Rene Milk, Stephan Rave
+# Copyright Holders: Rene Milk, Stephan Rave, Felix Schindler
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
 from __future__ import absolute_import, division, print_function
@@ -98,13 +98,13 @@ if __name__ == "__main__":
     for c in (RectGrid, TriaGrid):
         log('Timing g.superentities(1, 0) for {}'.format(c.__name__))
         for n in grid_sizes:
-            B = Superentities10Benchmark(c, ((n, n)))
+            B = Superentities10Benchmark(c, (n, n))
             log('{2}(({0},{0})): {1}'.format(n, B.benchmark(), c.__name__))
         log('')
 
     for c in (RectGrid, TriaGrid):
         log('Timing g.superentities(1, 0) and g.superentity_indices(1, 0) for {}'.format(c.__name__))
         for n in grid_sizes:
-            B = Superentity10BothBenchmark(c, ((n, n)))
+            B = Superentity10BothBenchmark(c, (n, n))
             log('{2}(({0},{0})): {1}'.format(n, B.benchmark(), c.__name__))
         log('')

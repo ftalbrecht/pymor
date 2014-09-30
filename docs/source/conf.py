@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of the pyMOR project (http://www.pymor.org).
-# Copyright Holders: Felix Albrecht, Rene Milk, Stephan Rave
+# Copyright Holders: Rene Milk, Stephan Rave, Felix Schindler
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
 import sys, os, re
@@ -13,6 +13,9 @@ if os.environ.get('READTHEDOCS', None) == 'True':
         def __init__(self, *args, **kwargs):
             pass
 
+        def __setitem__(self, k, v):
+            pass
+
         def __call__(self, *args, **kwargs):
             return Mock()
 
@@ -21,7 +24,7 @@ if os.environ.get('READTHEDOCS', None) == 'True':
             if name in ('__file__', '__path__'):
                 return '/dev/null'
             elif name in cls.__dict__:
-                return cls.__dict.get(name)
+                return cls.__dict__.get(name)
             elif name == 'QtGui':
                 return Mock()
             elif name[0] == name[0].upper():
@@ -33,7 +36,7 @@ if os.environ.get('READTHEDOCS', None) == 'True':
 
         QWidget = object
 
-    MOCK_MODULES = ['scipy', 'scipy.sparse', 'scipy.linalg', 'scipy.sparse.linalg',
+    MOCK_MODULES = ['scipy', 'scipy.sparse', 'scipy.linalg', 'scipy.sparse.linalg', 'scipy.io',
                     'contracts',
                     'docopt',
                     'dogpile', 'dogpile.cache', 'dogpile.cache.backends', 'dogpile.cache.backends.file',
@@ -95,7 +98,7 @@ templates_path = ['_templates']
 source_suffix = '.rst'
 
 # The master toctree document.
-#master_doc = 'index'
+master_doc = 'index'
 
 # General substitutions.
 project = 'pyMOR'
@@ -104,12 +107,10 @@ copyright = '2012-2013, the pyMOR AUTHORS'
 # The default replacements for |version| and |release|, also used in various
 # other places throughout the built documents.
 #
-import pymor
-
-version = '.'.join([str(v) for v in pymor.version])
+version = str(pymor.version)
 
 # The full version, including alpha/beta/rc tags.
-release = '.'.join([str(v) for v in pymor.version][:2])
+release = version.split('-')[0]
 print version, release
 
 # There are two options for replacing |today|: either, you set today to some
@@ -277,7 +278,10 @@ coverage_ignore_c_items = {}
 # autodoc_default_flags = ['members', 'undoc-members', 'show-inheritance']
 
 intersphinx_mapping = {'python': ('http://docs.python.org/2.7', None),
-                       'numpy': ('http://docs.scipy.org/doc/numpy', None)}
+                       'numpy': ('http://docs.scipy.org/doc/numpy', None),
+                       'scipy': ('http://docs.scipy.org/doc/scipy/reference', None)}
 
 import substitutions
 rst_epilog = substitutions.substitutions
+
+modindex_common_prefix = ['pymor.']

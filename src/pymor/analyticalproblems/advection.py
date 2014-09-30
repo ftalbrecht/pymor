@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 # This file is part of the pyMOR project (http://www.pymor.org).
-# Copyright Holders: Felix Albrecht, Rene Milk, Stephan Rave
+# Copyright Holders: Rene Milk, Stephan Rave, Felix Schindler
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
+#
+# Contributors: Michael Laier <m_laie01@uni-muenster.de>
 
 from __future__ import absolute_import, division, print_function
 
@@ -10,11 +12,10 @@ import numpy as np
 from pymor.core import ImmutableInterface
 from pymor.domaindescriptions import RectDomain
 from pymor.functions import ConstantFunction
-from pymor.tools import Named
 
 
-class InstationaryAdvectionProblem(ImmutableInterface, Named):
-    '''Instationary advection problem.
+class InstationaryAdvectionProblem(ImmutableInterface):
+    """Instationary advection problem.
 
     The problem is to solve ::
 
@@ -29,14 +30,16 @@ class InstationaryAdvectionProblem(ImmutableInterface, Named):
         A |DomainDescription| of the domain Ω the problem is posed on.
     flux_function
         The |Function| f. The current time is provided by adding the key `'_t'`
-        the the |Parameter| `mu`.
+        to the |Parameter| `mu`.
     flux_function_derivative
         The derivative of f with respect to u.
     rhs
         The |Function| s. The current time is provided by adding the key `'_t'`
-        the the |Parameter| `mu`.
+        to the |Parameter| `mu`.
     dirichlet_data
         |Function| providing the Dirichlet boundary values in global coordinates.
+    initial_data
+        |Function| providing the initial values in global coordinates.
     T
         The end time T.
     name
@@ -51,11 +54,11 @@ class InstationaryAdvectionProblem(ImmutableInterface, Named):
     initial_data
     dirichlet_data
     T
-    '''
+    """
 
     def __init__(self, domain=RectDomain(), rhs=ConstantFunction(dim_domain=2),
-                 flux_function=ConstantFunction(value=np.array([0, 0]), dim_domain=2),
-                 flux_function_derivative=ConstantFunction(value=np.array([0, 0]), dim_domain=2),
+                 flux_function=ConstantFunction(value=np.array([0, 0]), dim_domain=1),
+                 flux_function_derivative=ConstantFunction(value=np.array([0, 0]), dim_domain=1),
                  dirichlet_data=ConstantFunction(value=0, dim_domain=2),
                  initial_data=ConstantFunction(value=1, dim_domain=2), T=1, name=None):
         self.domain = domain

@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # This file is part of the pyMOR project (http://www.pymor.org).
-# Copyright Holders: Felix Albrecht, Rene Milk, Stephan Rave
+# Copyright Holders: Rene Milk, Stephan Rave, Felix Schindler
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
 # make sure we got distribute in place
-from distribute_setup import use_setuptools
-use_setuptools()
+#from distribute_setup import use_setuptools
+#use_setuptools()
 
 import sys
 import os
@@ -29,20 +29,10 @@ install_suggests = dependencies.install_suggests
 
 class PyTest(TestCommand):
 
-    user_options = [('flakes', 'F', 'run pyflakes checks'), ('pep8', 'p', 'run pep8 checks'),
-                    ('ff', 'f', 're-run all (cached) tests')]
-    boolean_options = ['flakes' , 'pep8', 'ff']
-
-    def initialize_options(self):
-        TestCommand.initialize_options(self)
-        self.flakes = False
-        self.pep8 = False
-        self.ff = False
-        
     def finalize_options(self):
         TestCommand.finalize_options(self)
         print(sys.argv[3:])
-        self.test_args = sys.argv[3:] + ['src/pymortests']
+        self.test_args = sys.argv[3:] + ['--cov=pymor', '--cov-report=html', '--cov-report=xml', 'src/pymortests']
         self.test_suite = True
 
     def run_tests(self):
@@ -111,7 +101,10 @@ def _numpy_monkey():
 def write_version():
     filename = os.path.join(os.path.dirname(__file__), 'src', 'pymor', 'version.py')
     try:
-        revstring = subprocess.check_output(['git', 'describe', '--tags', '--candidates', '20', '--match', '*.*.*']).strip()
+        if 'PYMOR_DEB_VERSION' in os.environ:
+            revstring = os.environ['PYMOR_DEB_VERSION']
+        else:
+            revstring = subprocess.check_output(['git', 'describe', '--tags', '--candidates', '20', '--match', '*.*.*']).strip()
         with open(filename, 'w') as out:
             out.write('revstring = \'{}\''.format(revstring))
     except:
@@ -185,17 +178,16 @@ def setup_package():
         package_dir={'': 'src'},
         packages=find_packages('src'),
         include_package_data=True,
-        scripts=['run_tests.py', 'distribute_setup.py', 'dependencies.py', 'install.py'],
+        scripts=['src/pymor-demo', 'distribute_setup.py', 'dependencies.py', 'install.py'],
         url='http://pymor.org',
         description=' ' ,
         long_description=open('README.txt').read(),
         setup_requires=setup_requires,
         tests_require=tests_require,
         install_requires=install_requires,
-        classifiers=['Development Status :: 3 - Alpha',
+        classifiers=['Development Status :: 4 - Beta',
             'License :: OSI Approved :: BSD License',
             'Programming Language :: Python :: 2.7',
-            'Programming Language :: Python :: 3',
             'Intended Audience :: Science/Research',
             'Topic :: Scientific/Engineering :: Mathematics',
             'Topic :: Scientific/Engineering :: Visualization'],

@@ -1,5 +1,5 @@
 # This file is part of the pyMOR project (http://www.pymor.org).
-# Copyright Holders: Felix Albrecht, Rene Milk, Stephan Rave
+# Copyright Holders: Rene Milk, Stephan Rave, Felix Schindler
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
 from __future__ import absolute_import, division, print_function
@@ -12,7 +12,7 @@ from pymor.tools.relations import inverse_relation
 
 
 class ConformalTopologicalGridDefaultImplementations(object):
-    '''Provides default informations for |ConformalTopologicalGrids|.'''
+    """Provides default informations for |ConformalTopologicalGrids|."""
 
     @cached
     def _subentities(self, codim, subentity_codim):
@@ -130,7 +130,7 @@ class ConformalTopologicalGridDefaultImplementations(object):
 
 
 class SimpleReferenceElementDefaultImplementations(object):
-    '''Provides default implementations for |ReferenceElements|.'''
+    """Provides default implementations for |ReferenceElements|."""
 
     @cached
     def _subentity_embedding(self, subentity_codim):
@@ -161,13 +161,13 @@ class SimpleReferenceElementDefaultImplementations(object):
 
 
 class AffineGridDefaultImplementations(object):
-    '''Provides default implementations for |AffineGrids|.'''
+    """Provides default implementations for |AffineGrids|."""
 
     @cached
     def _subentities(self, codim, subentity_codim):
         assert 0 <= codim <= self.dim, 'Invalid codimension'
         assert 0 < codim, 'Not implemented'
-        P = self.superentities(codim, codim - 1)[:, 0]  # we assume here that superentites() is sorted by global index
+        P = self.superentities(codim, codim - 1)[:, 0]  # we assume here that superentities() is sorted by global index
         I = self.superentity_indices(codim, codim - 1)[:, 0]
         SE = self.subentities(codim - 1, subentity_codim)[P]
         RSE = self.reference_element(codim - 1).subentities(1, subentity_codim - (codim - 1))[I]

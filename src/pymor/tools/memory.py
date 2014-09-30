@@ -1,4 +1,11 @@
+# This file is part of the pyMOR project (http://www.pymor.org).
+# Copyright Holders: Rene Milk, Stephan Rave, Felix Schindler
+# License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
+#
+# Contributors: Michael Laier <m_laie01@uni-muenster.de>
+
 ## {{{ http://code.activestate.com/recipes/577504/ (r3) MIT licensed
+
 from __future__ import absolute_import, division, print_function
 from sys import getsizeof, stderr
 from itertools import chain
@@ -14,7 +21,7 @@ last_memory_usage = 0
 
 
 def memory_usage(unit='mb'):
-    '''Returns the memory usage of the current process in bytes
+    """Returns the memory usage of the current process in bytes
 
     Returns
     -------
@@ -22,7 +29,7 @@ def memory_usage(unit='mb'):
         Current memory usage.
     change
         Change of memory usage since last call.
-    '''
+    """
     unit = unit.lower()
     assert unit in ('b', 'kb', 'mb', 'gb')
     factors = {'b': 1,
@@ -43,8 +50,8 @@ def print_memory_usage(msg=None, unit='mb'):
         print('Memory usage {0:5.1f} {1} - delta: {2:5.1f} {1} - {3}'.format(u[0], unit.upper(), u[1], msg))
 
 
-def total_size(o, handlers={}, verbose=False):
-    """ Returns the approximate memory footprint an object and all of its contents.
+def total_size(o, handlers=None, verbose=False):
+    """ Returns the approximate memory footprint of an object and all of its contents.
 
     Automatically finds the contents of the following builtin containers and
     their subclasses:  tuple, list, deque, dict, set and frozenset.
@@ -54,6 +61,7 @@ def total_size(o, handlers={}, verbose=False):
                     OtherContainerClass: OtherContainerClass.get_elements}
 
     """
+    handlers = handlers if handlers else {}
     dict_handler = lambda d: chain.from_iterable(d.items())
     all_handlers = {tuple: iter,
                     list: iter,

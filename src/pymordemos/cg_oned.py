@@ -1,26 +1,37 @@
 #!/usr/bin/env python
 # This file is part of the pyMOR project (http://www.pymor.org).
-# Copyright Holders: Felix Albrecht, Rene Milk, Stephan Rave
+# Copyright Holders: Rene Milk, Stephan Rave, Felix Schindler
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
-'''
-Proof of concept for solving the poisson equation in 1D using linear finite elements and our grid interface
-'''
+"""Proof of concept for solving the poisson equation in 1D using linear finite elements and our grid interface
+
+Usage:
+    cg_oned.py PROBLEM-NUMBER N PLOT
+
+Arguments:
+    PROBLEM-NUMBER    {0,1}, selects the problem to solve
+
+    N                 Grid interval count
+
+    PLOT              plot solution after solve?
+
+Options:
+    -h, --help    this message
+"""
 
 from __future__ import absolute_import, division, print_function
 
-import sys
-
+from docopt import docopt
 import numpy as np
 
 from pymor.analyticalproblems import EllipticProblem
-from pymor.core import getLogger
+from pymor.core import set_log_levels
 from pymor.discretizers import discretize_elliptic_cg
 from pymor.domaindescriptions import LineDomain
 from pymor.functions import GenericFunction, ConstantFunction
 from pymor.parameters import CubicParameterSpace, ProjectionParameterFunctional, GenericParameterFunctional
 
-getLogger('pymor.discretizations').setLevel('INFO')
+set_log_levels({'pymor.discretizations': 'INFO'})
 
 
 def cg_oned_demo(nrhs, n, plot):
@@ -49,7 +60,7 @@ def cg_oned_demo(nrhs, n, plot):
 
     print('The parameter type is {}'.format(discretization.parameter_type))
 
-    U = discretization.type_solution.empty(discretization.dim_solution)
+    U = discretization.solution_space.empty()
     for mu in parameter_space.sample_uniformly(10):
         U.append(discretization.solve(mu))
 
@@ -59,9 +70,8 @@ def cg_oned_demo(nrhs, n, plot):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) < 4:
-        sys.exit('Usage: {} PROBLEM-NUMBER N PLOT'.format(sys.argv[0]))
-    nrhs = int(sys.argv[1])
-    n = int(sys.argv[2])
-    plot = bool(int(sys.argv[3]))
+    args = docopt(__doc__)
+    nrhs = int(args['PROBLEM-NUMBER'])
+    n = int(args['N'])
+    plot = bool(args['PLOT'])
     cg_oned_demo(nrhs, n, plot)
