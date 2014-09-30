@@ -4,12 +4,17 @@
 
 from __future__ import absolute_import, division, print_function
 
+import __builtin__ as bb
+import numpy as np
+
 import time
 from itertools import izip
 
 from pymor.algorithms.basisextension import trivial_basis_extension
 from pymor.core import getLogger
 from pymor.core.exceptions import ExtensionError
+from pymor.operators import NumpyMatrixOperator
+from pymor.la import NumpyVectorArray
 
 
 def greedy(discretization, reductor, samples, initial_basis=None, use_estimator=True, error_norm=None,
@@ -81,6 +86,9 @@ def greedy(discretization, reductor, samples, initial_basis=None, use_estimator=
         :max_errs_mu:            The parameters corresponding to `max_errs`.
     '''
 
+    example = bb._example
+    wrapper = bb._wrapper
+
     logger = getLogger('pymor.algorithms.greedy.greedy')
     samples = list(samples)
     logger.info('Started greedy search on {} samples'.format(len(samples)))
@@ -93,10 +101,29 @@ def greedy(discretization, reductor, samples, initial_basis=None, use_estimator=
     hierarchic = False
 
     rd, rc, reduction_data = None, None, None
+    old_lhs, old_rhs = None, None
+    lhs, rhs = None, None
     while True:
+        logger.info('checking reduced basis for 1 ... ')
+        l2_product = discretization.products['l2']
+        one = basis.copy(0)
+        for ii in np.arange(one.dim):
+            one._list[0]._impl.set_entry(ii, 1)
+        projection_lhs = NumpyMatrixOperator(l2_product.apply2(basis, basis, pairwise=False))
+        projection_rhs = NumpyVectorArray(l2_product.apply2(one, basis, pairwise=False))
+        reduced_one_DoFs = projection_lhs.apply_inverse(projection_rhs)
+        reduced_one = basis.lincomb(reduced_one_DoFs._array)
+        assert (one - reduced_one).sup_norm() < 1e-12
+
+        # old_lhs = lhs.copy() if lhs is not None else None
+        # old_rhs = rhs.copy() if rhs is not None else None
+
         logger.info('Reducing ...')
         rd, rc, reduction_data = reductor(discretization, basis) if not hierarchic \
             else reductor(discretization, basis, extends=(rd, rc, reduction_data))
+
+        # lhs = rd.operator.assemble(samples[0])
+        # rhs = rd.rhs.assemble(samples[0])
 
         logger.info('Estimating errors ...')
         if use_estimator:
