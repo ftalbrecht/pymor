@@ -1,5 +1,5 @@
 # This file is part of the pyMOR project (http://www.pymor.org).
-# Copyright Holders: Felix Albrecht, Rene Milk, Stephan Rave
+# Copyright Holders: Rene Milk, Stephan Rave, Felix Schindler
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
 from __future__ import absolute_import, division, print_function
@@ -14,8 +14,8 @@ from pymor.core.exceptions import ExtensionError
 
 
 def greedy_lrbms(discretization, reductor, samples, initial_basis=None, use_estimator=True, error_norm=None,
-                 extension_algorithm=trivial_basis_extension, target_error=None, max_extensions=None):
-    '''Greedy basis generation algorithm in the LRBMS context.
+           extension_algorithm=trivial_basis_extension, target_error=None, max_extensions=None):
+    """Greedy basis generation algorithm in the LRBMS context.
 
     This algorithm generates a reduced basis by iteratively adding the
     worst approximated solution snapshot for a given training set to the
@@ -28,11 +28,11 @@ def greedy_lrbms(discretization, reductor, samples, initial_basis=None, use_esti
     Parameters
     ----------
     discretization
-        The discretization to reduce.
+        The |Discretization| to reduce.
     reductor
-        Reductor for reducing the given discretization. This has to be a
+        Reductor for reducing the given |Discretization|. This has to be a
         function of the form `reductor(discretization, basis, extends=None)`.
-        If your reductor takes more arguments, use, e.g., functools.partial.
+        If your reductor takes more arguments, use, e.g., :func:`functools.partial`.
         The method has to return a tuple
         `(reduced_discretization, reconstructor, reduction_data)`.
         In case the last basis extension was `hierarchic` (see
@@ -40,9 +40,9 @@ def greedy_lrbms(discretization, reductor, samples, initial_basis=None, use_esti
         `(last_reduced_discretization, last_reconstructor, last_reduction_data)`
         which can be used by the reductor to speed up the reduction
         process. For an example see
-        :func:`pymor.reductors.linear.reduce_stationary_affine_linear`.
+        :func:`~pymor.reductors.linear.reduce_stationary_affine_linear`.
     samples
-        The set of parameter samples on which to perform the greedy search.
+        The set of |Parameter| samples on which to perform the greedy search.
     initial_basis
         The initial reduced basis with which the algorithm starts. If `None`,
         an empty basis is used as initial_basis.
@@ -71,21 +71,16 @@ def greedy_lrbms(discretization, reductor, samples, initial_basis=None, use_esti
     Returns
     -------
     Dict with the following fields:
-        'basis'
-            The reduced basis.
-        'reduced_discretization'
-            The reduced discretization obtained for the computed basis.
-        'reconstructor'
-            Reconstructor for `reduced_discretization`.
-        'max_err'
-            Last estimated maximum error on the sample set.
-        'max_err_mu'
-            The parameter that corresponds to `max_err`.
-        'max_errs'
-            Sequence of maximum errors during the greedy run.
-        'max_errs_mu'
-            The parameters corresponding to `max_errs`.
-    '''
+
+        :basis:                  The reduced basis.
+        :reduced_discretization: The reduced |Discretization| obtained for the
+                                 computed basis.
+        :reconstructor:          Reconstructor for `reduced_discretization`.
+        :max_err:                Last estimated maximum error on the sample set.
+        :max_err_mu:             The parameter that corresponds to `max_err`.
+        :max_errs:               Sequence of maximum errors during the greedy run.
+        :max_err_mus:            The parameters corresponding to `max_errs`.
+    """
 
     logger = getLogger('pymor.algorithms.greedy.greedy')
     samples = list(samples)
@@ -95,8 +90,9 @@ def greedy_lrbms(discretization, reductor, samples, initial_basis=None, use_esti
         assert len(extension_algorithm) == num_subdomains
     else:
         extension_algorithm = [extension_algorithm for ss in np.arange(num_subdomains)]
+
+    logger.info('Started greedy search on {} samples'.format(len(samples)))
     basis = initial_basis
-    logger.info('Started greedy search on {} samples, {} spatial subdomains'.format(len(samples), num_subdomains))
 
     tic = time.time()
     extensions = 0
@@ -104,6 +100,7 @@ def greedy_lrbms(discretization, reductor, samples, initial_basis=None, use_esti
     max_err_mus = []
     hierarchic = False
 
+    rd, rc, reduction_data = None, None, None
     while True:
         logger.info('Reducing ...')
         rd, rc, reduction_data = reductor(discretization, basis) if not hierarchic \
@@ -136,20 +133,14 @@ def greedy_lrbms(discretization, reductor, samples, initial_basis=None, use_esti
         local_bases_extended = 0
         for ss in np.arange(num_subdomains):
             try:
-                basis[ss], _  = extension_algorithm[ss](basis[ss], U.block(ss))
-                local_bases_extended += 1
+                basis[ss], _ = extension_algorithm[ss](basis[ss], U.block[ss])
             except ExtensionError:
                 logger.info('Extension failed on subdomain {}.'.format(ss))
-            # if not 'hierarchic' in extension_data:
-            #     logger.warn('Extension algorithm does not report if extension was hierarchic. Assuming it was\'nt ..')
-            hierarchic = False
-            # else:
-            #     hierarchic = extension_data['hierarchic']
-        extensions += 1
-
         if local_bases_extended == 0:
             logger.info('Extension failed on all subdomains. Stopping now.')
             break
+        extensions += 1
+        hierarchic = False
 
         logger.info('')
 

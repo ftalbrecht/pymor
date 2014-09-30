@@ -133,7 +133,7 @@ def gram_schmidt(A, product=None, tol=1e-14, offset=0, find_duplicates=True,
             gramian = A.dot(A, ind=range(offset, len(A)), o_ind=range(offset, len(A)), pairwise=False)
         else:
             gramian = product.apply2(A, A, U_ind=range(offset, len(A)), V_ind=range(offset, len(A)), pairwise=False)
-        if not float_cmp_all(gramian, np.eye(len(gramian))):
+        if not float_cmp_all(gramian, np.eye(len(gramian)), atol=check_tol, rtol=0.):
             err = np.max(gramian - np.eye(len(gramian)))
             raise AccuracyError('result not orthogonal (max err={})'.format(err))
 

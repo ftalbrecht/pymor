@@ -6,3 +6,4 @@
 from pymor.la.basic import induced_norm, cat_arrays
 from pymor.la.interfaces import VectorArrayInterface, VectorSpace
 from pymor.la.numpyvectorarray import NumpyVectorArray, NumpyVectorSpace
+from pymor.la.blockvectorarray import BlockVectorArray, create_block_vector_array_type
