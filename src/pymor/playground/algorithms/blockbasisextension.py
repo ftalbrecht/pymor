@@ -6,10 +6,10 @@ from __future__ import absolute_import, division, print_function
 
 import numpy as np
 
-from pymor.algorithms import trivial_basis_extension, gram_schmidt_basis_extension
-from pymor.core import getLogger
+from pymor.algorithms.basisextension import trivial_basis_extension, gram_schmidt_basis_extension
+from pymor.core.logger import getLogger
 from pymor.core.exceptions import ExtensionError
-from pymor.playground.la import BlockVectorArray
+from pymor.vectorarrays.block import BlockVectorArray
 from pymor.playground.operators import BlockOperator
 
 

@@ -5,13 +5,13 @@
 from __future__ import absolute_import, division, print_function
 from itertools import izip
 
-import pymor.core as core
-from pymor.la import NumpyVectorArray
-from pymor.playground.la import BlockVectorArray
-from pymor.reductors.basic import GenericRBReconstructor
+from pymor.core.interfaces    import BasicInterface
+from pymor.vectorarrays.numpy import NumpyVectorArray
+from pymor.vectorarrays.block import BlockVectorArray
+from pymor.reductors.basic    import GenericRBReconstructor
 
 
-class GenericBlockRBReconstructor(core.BasicInterface):
+class GenericBlockRBReconstructor(BasicInterface):
     """Block variant of GenericRBReconstructor"""
 
     def __init__(self, RB):
