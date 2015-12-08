@@ -8,12 +8,6 @@ import time
 
 import numpy as np
 
-try:
-    from simdb.run import add_start_times, add_stop_times
-    HAVE_SIMDB=True
-except:
-    HAVE_SIMDB=False
-
 from pymor.algorithms.basisextension import gram_schmidt_basis_extension
 from pymor.core.exceptions import ExtensionError
 from pymor.core.logger import getLogger
@@ -95,9 +89,6 @@ def greedy(discretization, reductor, samples, initial_basis=None, use_estimator=
     logger.info('Started greedy search on {} samples'.format(sample_count))
 
     def greedy_main():
-        if HAVE_SIMDB:
-            add_start_times('pymor_algorithms_greedy__all')
-
         basis = initial_basis
 
         tic = time.time()
@@ -109,12 +100,8 @@ def greedy(discretization, reductor, samples, initial_basis=None, use_estimator=
         rd, rc, reduction_data = None, None, None
         while True:
             logger.info('Reducing ...')
-            if HAVE_SIMDB:
-                add_start_times('pymor_algorithms_greedy__reduce')
             rd, rc, reduction_data = reductor(discretization, basis) if not hierarchic \
                 else reductor(discretization, basis, extends=(rd, rc, reduction_data))
-            if HAVE_SIMDB:
-                add_stop_times('pymor_algorithms_greedy__reduce')
 
             if sample_count == 0:
                 logger.info('There is nothing else to do for empty samples.')
@@ -123,8 +110,6 @@ def greedy(discretization, reductor, samples, initial_basis=None, use_estimator=
                         'time': time.time() - tic, 'reduction_data': reduction_data}
 
             logger.info('Estimating errors ...')
-            if HAVE_SIMDB:
-                add_start_times('pymor_algorithms_greedy__estimate')
             if pool:
                 if use_estimator:
                     errors, mus = zip(*pool.apply(_estimate, rd=rd, d=None, rc=None, samples=samples, error_norm=None))
@@ -147,8 +132,6 @@ def greedy(discretization, reductor, samples, initial_basis=None, use_estimator=
                 errors = map(lambda x: x[0] if hasattr(x, '__len__') else x, errors)
                 max_err_ind = np.argmax(errors)
                 max_err, max_err_mu = errors[max_err_ind], samples[max_err_ind]
-            if HAVE_SIMDB:
-                add_stop_times('pymor_algorithms_greedy__estimate')
 
             max_errs.append(max_err)
             max_err_mus.append(max_err_mu)
@@ -159,20 +142,10 @@ def greedy(discretization, reductor, samples, initial_basis=None, use_estimator=
                 break
 
             logger.info('Extending with snapshot for mu = {}'.format(max_err_mu))
-            if HAVE_SIMDB:
-                add_start_times('pymor_algorithms_greedy__solve')
             U = discretization.solve(max_err_mu)
-            if HAVE_SIMDB:
-                add_stop_times('pymor_algorithms_greedy__solve')
-            if HAVE_SIMDB:
-                add_start_times('pymor_algorithms_greedy__extend')
             try:
                 basis, extension_data = extension_algorithm(basis, U)
-                if HAVE_SIMDB:
-                    add_stop_times('pymor_algorithms_greedy__extend')
             except ExtensionError:
-                if HAVE_SIMDB:
-                    add_stop_times('pymor_algorithms_greedy__extend')
                 logger.info('Extension failed. Stopping now.')
                 break
             extensions += 1
@@ -193,8 +166,6 @@ def greedy(discretization, reductor, samples, initial_basis=None, use_estimator=
 
         tictoc = time.time() - tic
         logger.info('Greedy search took {} seconds'.format(tictoc))
-        if HAVE_SIMDB:
-            add_stop_times('pymor_algorithms_greedy__all')
         return {'basis': basis, 'reduced_discretization': rd, 'reconstructor': rc,
                 'max_errs': max_errs, 'max_err_mus': max_err_mus, 'extensions': extensions,
                 'time': tictoc, 'reduction_data': reduction_data}
