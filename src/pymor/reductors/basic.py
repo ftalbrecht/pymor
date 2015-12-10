@@ -84,7 +84,7 @@ def reduce_generic_rb(discretization, RB, operator_product=None, vector_product=
     else:
         projected_products = None
 
-    cache_region = None if disable_caching else discretization.caching
+    cache_region = None if disable_caching else discretization.cache_region
 
     rd = discretization.with_(operators=projected_operators, functionals=projected_functionals,
                               vector_operators=projected_vector_operators,

@@ -489,6 +489,7 @@ class FixedParameterOperator(OperatorBase):
     """
 
     def __init__(self, operator, mu=None, name=None):
+        import ipdb; ipdb.set_trace()
         assert isinstance(operator, OperatorInterface)
         assert operator.parse_parameter(mu) or True
         self.source = operator.source

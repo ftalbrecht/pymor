@@ -263,7 +263,7 @@ class InstationaryDiscretization(DiscretizationBase):
         assert rhs is None or isinstance(rhs, OperatorInterface) and rhs.linear
         assert mass is None or isinstance(mass, OperatorInterface) and mass.linear
         assert isinstance(time_stepper, TimeStepperInterface)
-        assert operator.source == operator.range == initial_data.range
+        # assert operator.source == operator.range == initial_data.range
         assert rhs is None or rhs.source == operator.source and rhs.range.dim == 1
         assert mass is None or mass.source == mass.range == operator.source
         assert all(f.source == operator.source for f in functionals.values())
