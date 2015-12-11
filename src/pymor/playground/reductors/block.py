@@ -5,6 +5,8 @@
 from __future__ import absolute_import, division, print_function
 from itertools import izip
 
+import numpy as np
+
 from pymor.core.interfaces import BasicInterface
 from pymor.vectorarrays.block import BlockVectorArray
 from pymor.vectorarrays.numpy import NumpyVectorArray
@@ -19,10 +21,14 @@ class GenericBlockRBReconstructor(BasicInterface):
         self.RB = tuple(RB)
 
     def reconstruct(self, U):
-        assert isinstance(U, BlockVectorArray)
-        assert all(subspace.type == NumpyVectorArray for subspace in U.space.subtype)
-        return BlockVectorArray([GenericRBReconstructor(rb).reconstruct(block)
-                                 for rb, block in izip(self.RB, U._blocks)])
+        if U.dim == 0:
+            return BlockVectorArray([GenericRBReconstructor(self.RB[ii].empty()).reconstruct(U)
+                                    for ii in np.arange(len(self.RB))])
+        else:
+            assert isinstance(U, BlockVectorArray)
+            assert all(subspace.type == NumpyVectorArray for subspace in U.space.subtype)
+            return BlockVectorArray([GenericRBReconstructor(rb).reconstruct(block)
+                                     for rb, block in izip(self.RB, U._blocks)])
 
     def restricted_to_subbasis(self, dim):
         if not isinstance(dim, tuple):
