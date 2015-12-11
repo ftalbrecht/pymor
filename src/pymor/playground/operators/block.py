@@ -104,18 +104,7 @@ class BlockOperator(OperatorBase):
             return super(BlockOperator, self).apply2(V, U, pairwise, U_ind=U_ind, V_ind=V_ind, mu=mu, product=product)
 
     def apply_inverse(self, U, ind=None, mu=None, options=None):
-        assembled = self.assemble(mu=mu)
-        if isinstance(assembled, NumpyMatrixOperator):
-            solution = assembled.apply_inverse(U, ind=ind, options=options)
-            assert len(solution) == 1
-            assert (not np.isnan(np.sum(solution._array))) and (not np.isinf(np.sum(solution._array)))
-            block_sizes = [sp.subtype for sp in self.source.subtype]
-            blocks = [NumpyVectorArray(solution._array[0][sum(block_sizes[:ss]):sum(block_sizes[:(ss + 1)])])
-                      for ss in np.arange(len(block_sizes))]
-            return BlockVectorArray(blocks)
-        else:
-            # TODO: implement use of generic solver
-            raise NotImplementedError
+        raise NotImplementedError
 
     def projected(self, range_basis, source_basis, product=None, name=None):
         if product is not None:
