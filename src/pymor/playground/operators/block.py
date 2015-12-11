@@ -142,15 +142,7 @@ class BlockOperator(OperatorBase):
         assembled_blocks = [[self._blocks[ii][jj].assemble(mu) if self._blocks[ii][jj] is not None else None
                              for jj in np.arange(self.num_source_blocks)]
                             for ii in np.arange(self.num_range_blocks)]
-        if all(all([isinstance(op, NumpyMatrixOperator) if op is not None else True for op in row]) for row in assembled_blocks):
-            mat = bmat([[coo_matrix(assembled_blocks[ii][jj]._matrix)
-                         if assembled_blocks[ii][jj] is not None else coo_matrix((self._range_dims[ii], self._source_dims[jj]))
-                         for jj in np.arange(self.num_source_blocks)]
-                        for ii in np.arange(self.num_range_blocks)])
-            # TODO: decide (depending on the size of mat) if we want to call todense()?
-            return NumpyMatrixOperator(mat.todense())
-        else:
-            return BlockOperator(assembled_blocks)
+        return BlockOperator(assembled_blocks)
 
     def as_vector(self, mu=None):
         if not self.linear:
