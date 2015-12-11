@@ -155,20 +155,22 @@ class BlockOperator(OperatorBase):
     def as_vector(self, mu=None):
         if not self.linear:
             raise TypeError('This nonlinear operator does not represent a vector or linear functional.')
-        elif self.source.dim == 1 and self.num_source_blocks == 1 and self.source.subtype[0].type is NumpyVectorArray:
+        elif self.source.dim == 1:
             # we are a vector
-            if not all(rr.type is NumpyVectorArray for rr in self.range.subtype):
-                raise NotImplementedError
-            return NumpyVectorArray(np.concatenate([self._blocks[ii][0].assemble(mu)._matrix
-                                                    for ii in np.arange(self.num_range_blocks)],
-                                                   axis=1))
-        elif self.range.dim == 1 and self.num_range_blocks == 1 and self.range.subtype[0].type is NumpyVectorArray:
+            return BlockVectorArray([self._blocks[ii][0].assemble(mu) for ii in np.arange(self.num_range_blocks)])
+            # if not all(rr.type is NumpyVectorArray for rr in self.range.subtype):
+            #     raise NotImplementedError
+            # return NumpyVectorArray(np.concatenate([self._blocks[ii][0].assemble(mu)._matrix
+            #                                         for ii in np.arange(self.num_range_blocks)],
+            #                                        axis=1))
+        elif self.range.dim == 1:
             # we are a functional
-            if not all(ss.type is NumpyVectorArray for ss in self.source.subtype):
-                raise NotImplementedError
-            return NumpyVectorArray(np.concatenate([self._blocks[0][jj].assemble(mu)._matrix
-                                                    for jj in np.arange(self.num_source_blocks)],
-                                                   axis=1))
+            return BlockVectorArray([self._blocks[0][ii].assemble(mu) for ii in np.arange(self.num_range_blocks)])
+            # if not all(ss.type is NumpyVectorArray for ss in self.source.subtype):
+            #     raise NotImplementedError
+            # return NumpyVectorArray(np.concatenate([self._blocks[0][jj].assemble(mu)._matrix
+            #                                         for jj in np.arange(self.num_source_blocks)],
+            #                                        axis=1))
         else:
             raise TypeError('This operator does not represent a vector or linear functional.')
 
