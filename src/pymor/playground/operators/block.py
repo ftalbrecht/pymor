@@ -146,7 +146,7 @@ class BlockOperator(OperatorBase):
             #                                        axis=1))
         elif self.range.dim == 1:
             # we are a functional
-            return BlockVectorArray([self._blocks[0][ii].assemble(mu) for ii in np.arange(self.num_range_blocks)])
+            return BlockVectorArray([self._blocks[0][ii].assemble(mu) for ii in np.arange(self.num_source_blocks)])
             # if not all(ss.type is NumpyVectorArray for ss in self.source.subtype):
             #     raise NotImplementedError
             # return NumpyVectorArray(np.concatenate([self._blocks[0][jj].assemble(mu)._matrix
