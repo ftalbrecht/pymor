@@ -104,7 +104,11 @@ class BlockOperator(OperatorBase):
             return super(BlockOperator, self).apply2(V, U, pairwise, U_ind=U_ind, V_ind=V_ind, mu=mu, product=product)
 
     def apply_inverse(self, U, ind=None, mu=None, options=None):
-        raise NotImplementedError
+        assert U in self.source
+        if not self._is_diagonal:
+            raise NotImplementedError
+        return BlockVectorArray([self._blocks[ii][ii].apply_inverse(U._blocks[ii], ind=ind, mu=mu, options=options)
+                                 for ii in np.arange(self.num_source_blocks)])
 
     def projected(self, range_basis, source_basis, product=None, name=None):
         if product is not None:
