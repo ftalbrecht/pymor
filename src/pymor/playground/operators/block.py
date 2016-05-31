@@ -86,22 +86,14 @@ class BlockOperator(OperatorBase):
                 V[ii] += op.apply(U._blocks[jj], ind=ind, mu=mu)
         return BlockVectorArray(V)
 
-    def apply2(self, V, U, pairwise, U_ind=None, V_ind=None, mu=None, product=None):
+    def apply2(self, V, U, U_ind=None, V_ind=None, mu=None, product=None):
         assert U in self.source
         assert V in self.range
         if self._is_diagonal and product is None:
-            if len(U) != 1:
-                raise NotImplementedError
-            if len(V) != 1:
-                raise NotImplementedError
-            if U_ind is not None:
-                raise NotImplementedError
-            if V_ind is not None:
-                raise NotImplementedError
-            return sum([self._blocks[ii][ii].apply2(V._blocks[ii], U._blocks[ii], pairwise)
-                        for ii in np.arange(self.num_source_blocks)])
+            return np.sum((self._blocks[ii][ii].apply2(V._blocks[ii], U._blocks[ii])
+                           for ii in np.arange(self.num_source_blocks)), axis=0)
         else:
-            return super(BlockOperator, self).apply2(V, U, pairwise, U_ind=U_ind, V_ind=V_ind, mu=mu, product=product)
+            return super(BlockOperator, self).apply2(V, U, U_ind=U_ind, V_ind=V_ind, mu=mu, product=product)
 
     def apply_inverse(self, U, ind=None, mu=None, options=None):
         assert U in self.source
