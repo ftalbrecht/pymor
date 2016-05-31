@@ -25,7 +25,7 @@ def trivial_block_basis_extension(basis, U, copy_basis=True, copy_U=True, requir
     num_blocks = U.num_blocks
     if basis is None:
         basis = tuple(None for ii in np.arange(num_blocks))
-    assert isinstance(basis, list)
+    assert isinstance(basis, tuple)
     assert len(basis) == num_blocks
 
     failure = [True for ii in np.arange(num_blocks)]
