@@ -10,7 +10,7 @@ from pymor.algorithms.basisextension import trivial_basis_extension, gram_schmid
 from pymor.core.logger import getLogger
 from pymor.core.exceptions import ExtensionError
 from pymor.vectorarrays.block import BlockVectorArray
-from pymor.playground.operators import BlockOperator
+from pymor.operators.block import BlockOperator
 
 
 def trivial_block_basis_extension(basis, U, copy_basis=True, copy_U=True, require_all=False):
