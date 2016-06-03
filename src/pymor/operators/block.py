@@ -125,6 +125,16 @@ class BlockOperator(OperatorBase):
 
         return V
 
+    def as_vector(self, mu=None):
+        if not self.linear:
+            raise TypeError('This nonlinear operator does not represent a vector or linear functional.')
+        elif self.source.dim == 1 and np.all(tp is NumpyVectorArray for tp in self.source.subtype):
+            return BlockVectorArray([self._blocks[ii][0].assemble(mu) for ii in np.arange(self.num_range_blocks)])
+        elif self.range.dim == 1 and np.all(tp is NumpyVectorArray for tp in self.range.subtype):
+            return BlockVectorArray([self._blocks[0][ii].assemble(mu) for ii in np.arange(self.num_source_blocks)])
+        else:
+            raise TypeError('This operator does not represent a vector or linear functional.')
+
 
 class BlockDiagonalOperator(BlockOperator):
     """Block diagonal operator with arbitrary operators"""
