@@ -14,7 +14,8 @@ class GenericRBReconstructor(BasicInterface):
     """Simple reconstructor forming linear combinations with a reduced basis."""
 
     def __init__(self, RB):
-        self.RB = RB.copy()
+        # self.RB = RB.copy()
+        self.RB = RB
 
     def reconstruct(self, U):
         """Reconstruct high-dimensional vector from reduced vector `U`."""
