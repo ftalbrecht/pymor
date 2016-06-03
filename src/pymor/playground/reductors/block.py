@@ -31,8 +31,9 @@ class GenericBlockRBReconstructor(BasicInterface):
                                      for rb, block in izip(self.RB, U._blocks)])
 
     def restricted_to_subbasis(self, dim):
+        assert dim <= np.max(len(rb) for rb in self.RB)
         if not isinstance(dim, tuple):
             dim = len(self.RB)*[dim]
-        assert all([dd <= len(rb) for dd, rb in izip(dim, self.RB)])
+        assert all([dd <= len(rb) for dd, rb in izip(dim, self.RB)]) # NOTE: problematic for varying local sizes
         return GenericBlockRBReconstructor([rb.copy(ind=range(dd)) for rb, dd in izip(self.RB, dim)])
 
