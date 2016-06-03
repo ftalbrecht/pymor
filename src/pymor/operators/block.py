@@ -135,6 +135,20 @@ class BlockOperator(OperatorBase):
         else:
             raise TypeError('This operator does not represent a vector or linear functional.')
 
+    def projected(self, range_basis, source_basis, product=None, name=None):
+        if product is not None:
+            raise NotImplementedError
+        assert source_basis is not None or range_basis is not None
+        assert isinstance(source_basis, (tuple, list)) or source_basis is None
+        assert isinstance(range_basis, (tuple, list)) or range_basis is None
+        source_basis = tuple([None for ss in np.arange(self.num_source_blocks)]
+                              if source_basis is None else source_basis)
+        range_basis  = tuple([None for rr in np.arange(self.num_range_blocks)]
+                              if range_basis  is None else range_basis)
+        return BlockOperator([[self._blocks[ii][jj].projected(range_basis[ii], source_basis[jj], name=name)
+                               if self._blocks[ii][jj] is not None else None
+                               for jj in np.arange(self.num_source_blocks)]
+                              for ii in np.arange(self.num_range_blocks)])
 
 class BlockDiagonalOperator(BlockOperator):
     """Block diagonal operator with arbitrary operators"""
