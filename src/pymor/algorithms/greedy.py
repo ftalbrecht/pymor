@@ -113,18 +113,25 @@ def greedy(discretization, reductor, samples, initial_basis=None, use_estimator=
         max_errs = []
         max_err_mus = []
         hierarchic = False
+        rds = []
+        rcs = []
 
         rd, rc, reduction_data = None, None, None
         while True:
+
             with logger.block('Reducing ...'):
                 rd, rc, reduction_data = reductor(discretization, basis) if not hierarchic \
                     else reductor(discretization, basis, extends=(rd, rc, reduction_data))
+
+            rds.append(rd)
+            rcs.append(rc)
 
             if sample_count == 0:
                 logger.info('There is nothing else to do for empty samples.')
                 return {'basis': basis, 'reduced_discretization': rd, 'reconstructor': rc,
                         'max_errs': [], 'max_err_mus': [], 'extensions': 0,
-                        'time': time.time() - tic, 'reduction_data': reduction_data}
+                        'time': time.time() - tic, 'reduction_data': reduction_data,
+                        'rds': rds, 'rcs': rcs}
 
             with logger.block('Estimating errors ...'):
                 if use_estimator:
@@ -171,13 +178,16 @@ def greedy(discretization, reductor, samples, initial_basis=None, use_estimator=
                 with logger.block('Reducing once more ...'):
                     rd, rc, reduction_data = reductor(discretization, basis) if not hierarchic \
                         else reductor(discretization, basis, extends=(rd, rc, reduction_data))
+                rds.append(rd)
+                rcs.append(rc)
                 break
 
         tictoc = time.time() - tic
         logger.info('Greedy search took {} seconds'.format(tictoc))
         return {'basis': basis, 'reduced_discretization': rd, 'reconstructor': rc,
                 'max_errs': max_errs, 'max_err_mus': max_err_mus, 'extensions': extensions,
-                'time': tictoc, 'reduction_data': reduction_data}
+                'time': tictoc, 'reduction_data': reduction_data,
+                'rds': rds, 'rcs': rcs}
 
 
 def _estimate(rd=None, d=None, rc=None, samples=None, error_norm=None):
