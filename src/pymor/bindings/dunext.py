@@ -135,7 +135,11 @@ if config.HAVE_DUNEXT:
             return R
 
         def apply_transpose(self, V, mu=None):
-            raise NotImplementedError
+            assert V in self.range
+            R = self.source.zeros(len(V))
+            for v, r in zip(V._list, R._list):
+                self.matrix.mtv(v.impl, r.impl)
+            return R
 
         def apply_inverse(self, V, mu=None, least_squares=False):
             assert V in self.range
