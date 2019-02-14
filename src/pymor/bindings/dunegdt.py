@@ -13,7 +13,7 @@ if config.HAVE_DUNEGDT:
     import subprocess
     from tempfile import mkstemp
 
-    from dune.gdt import make_discrete_function
+    # from dune.gdt import make_discrete_function
 
     from pymor.core.interfaces import ImmutableInterface
     from pymor.bindings.dunext import DuneXTVector
